@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -164,26 +165,27 @@ export function ClipInspector({ clip }: Props) {
   }
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l">
-      <Accordion
-        type="multiple"
-        defaultValue={['source', 'timing', 'layout', 'fill', 'crop', 'video', 'audio']}
-        className="rounded-none border-0"
-      >
-        <Section value="source" title="Source">
-          <div className="space-y-1">
-            <p className="truncate text-xs text-foreground" title={clip.name}>
-              {clip.name}
-            </p>
-            <p className="font-mono text-xs text-muted-foreground">
-              {formatClipDuration(clip.durationInFrames, fps)}
-            </p>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Cloud className="h-3.5 w-3.5" />
-              {formatBytes(fakeBytes)}
-            </p>
-          </div>
-        </Section>
+    <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-l">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+        <Accordion
+          type="multiple"
+          defaultValue={['source', 'timing', 'layout', 'fill', 'crop', 'video', 'audio']}
+          className="min-w-0 rounded-none border-0"
+        >
+          <Section value="source" title="Source">
+            <div className="min-w-0 space-y-1">
+              <p className="w-full min-w-0 truncate text-xs text-foreground" title={clip.name}>
+                {clip.name}
+              </p>
+              <p className="font-mono text-xs text-muted-foreground">
+                {formatClipDuration(clip.durationInFrames, fps)}
+              </p>
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Cloud className="h-3.5 w-3.5" />
+                {formatBytes(fakeBytes)}
+              </p>
+            </div>
+          </Section>
 
         <Section value="timing" title="Timing">
           <div className="space-y-3">
@@ -603,7 +605,8 @@ export function ClipInspector({ clip }: Props) {
             <p className="text-xs text-muted-foreground">No captions yet.</p>
           </Section>
         )}
-      </Accordion>
+        </Accordion>
+      </ScrollArea>
     </aside>
   )
 }
@@ -622,12 +625,12 @@ function Section({
   return (
     <AccordionItem
       value={value}
-      className={`border-muted-foreground/20 data-open:bg-transparent ${last ? 'border-b' : ''}`}
+      className={`min-w-0 border-muted-foreground/20 data-open:bg-transparent ${last ? 'border-b' : ''}`}
     >
       <AccordionTrigger className="text-xs font-semibold text-foreground hover:no-underline">
         {title}
       </AccordionTrigger>
-      <AccordionContent className="px-1">{children}</AccordionContent>
+      <AccordionContent className="min-w-0 px-1">{children}</AccordionContent>
     </AccordionItem>
   )
 }
