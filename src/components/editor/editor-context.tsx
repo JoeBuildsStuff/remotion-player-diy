@@ -30,6 +30,7 @@ type EditorState = {
   addFiles: (files: FileList | File[]) => Promise<void>
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void
+  splitClip: (id: string, frame: number) => void
   seekTo: (frame: number) => void
   play: () => void
   pause: () => void
@@ -225,6 +226,39 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
+  const splitClip = useCallback((id: string, frame: number) => {
+    setClips((prev) => {
+      const clip = prev.find((c) => c.id === id)
+      if (!clip) return prev
+      const offset = frame - clip.startFrame
+      if (offset <= 0 || offset >= clip.durationInFrames) return prev
+      const firstDuration = offset
+      const secondDuration = clip.durationInFrames - offset
+      const first: Clip = {
+        ...clip,
+        durationInFrames: firstDuration,
+      }
+      const second: Clip = {
+        ...clip,
+        id: crypto.randomUUID(),
+        startFrame: clip.startFrame + offset,
+        durationInFrames: secondDuration,
+        trimBeforeFrames: clip.trimBeforeFrames + offset,
+        videoFadeInFrames: 0,
+        audioFadeInFrames: 0,
+      }
+      const firstWithFades: Clip = {
+        ...first,
+        videoFadeOutFrames: 0,
+        audioFadeOutFrames: 0,
+      }
+      const idx = prev.indexOf(clip)
+      const next = prev.slice()
+      next.splice(idx, 1, firstWithFades, second)
+      return next
+    })
+  }, [])
+
   const removeClip = useCallback((id: string) => {
     setClips((prev) => prev.filter((c) => c.id !== id))
     setSelectedClipId((prev) => (prev === id ? null : prev))
@@ -269,6 +303,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     addFiles,
     updateClip,
     removeClip,
+    splitClip,
     seekTo,
     play,
     pause,

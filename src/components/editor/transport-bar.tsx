@@ -38,10 +38,26 @@ export function TransportBar() {
     durationInFrames,
     isPlaying,
     volume,
+    clips,
+    selectedClipId,
+    setSelectedClipId,
     togglePlay,
     seekTo,
     setVolume,
+    splitClip,
   } = useEditor()
+
+  const selectedClip = clips.find((c) => c.id === selectedClipId) ?? null
+  const canSplit =
+    selectedClip != null &&
+    currentFrame > selectedClip.startFrame &&
+    currentFrame < selectedClip.startFrame + selectedClip.durationInFrames
+
+  const handleSplit = () => {
+    if (!selectedClip || !canSplit) return
+    splitClip(selectedClip.id, currentFrame)
+    setSelectedClipId(null)
+  }
 
   return (
     <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-t px-2">
@@ -52,6 +68,8 @@ export function TransportBar() {
               variant="outline"
               size="icon"
               aria-label="Split"
+              disabled={!canSplit}
+              onClick={handleSplit}
             >
               <Scissors className="h-4 w-4" />
             </Button>
