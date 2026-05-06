@@ -31,9 +31,3 @@ export type Clip = {
   audioFadeInFrames: number
   audioFadeOutFrames: number
 }
-
-export const TRACKS: { index: number; type: ClipType | 'any'; label: string }[] = [
-  { index: 0, type: 'video', label: 'Video' },
-  { index: 1, type: 'image', label: 'Overlay' },
-  { index: 2, type: 'audio', label: 'Audio' },
-]

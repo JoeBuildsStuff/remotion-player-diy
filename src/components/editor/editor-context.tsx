@@ -54,10 +54,13 @@ function fileTypeOf(file: File): ClipType | null {
   return null
 }
 
-function trackFor(type: ClipType): number {
-  if (type === 'video') return 0
-  if (type === 'image') return 1
-  return 2
+function trackFor(type: ClipType, clips: Clip[]): number {
+  const existingTrack = clips.find((clip) => clip.type === type)?.trackIndex
+  if (existingTrack != null) return existingTrack
+
+  if (clips.length === 0) return 0
+
+  return Math.max(...clips.map((clip) => clip.trackIndex)) + 1
 }
 
 function fitWithinCanvas(
@@ -169,10 +172,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         width,
         height,
       )
-      const trackIndex = trackFor(type)
+      const pendingClips = additions.concat(clips)
+      const trackIndex = trackFor(type, pendingClips)
       // Append after the last clip on that track.
-      const lastEnd = additions
-        .concat(clips)
+      const lastEnd = pendingClips
         .filter((c) => c.trackIndex === trackIndex)
         .reduce((m, c) => Math.max(m, c.startFrame + c.durationInFrames), 0)
       additions.push({
