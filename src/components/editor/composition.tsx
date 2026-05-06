@@ -232,6 +232,7 @@ function SelectionOutline({
 }
 
 function renderClip(clip: Clip) {
+  if (clip.visible === false) return null
   return <ClipRenderer clip={clip} />
 }
 
@@ -339,11 +340,17 @@ function ClipRenderer({ clip }: { clip: Clip }) {
 }
 
 function sortOutlines(clips: Clip[], selectedClipId: string | null | undefined) {
-  const visualClips = clips.filter((clip) => clip.type !== 'audio')
+  const visualClips = clips.filter(
+    (clip) => clip.type !== 'audio' && clip.visible !== false,
+  )
   const selectedClips = visualClips.filter((clip) => clip.id === selectedClipId)
   const unselectedClips = visualClips.filter((clip) => clip.id !== selectedClipId)
 
   return [...unselectedClips, ...selectedClips]
+}
+
+function sortClipsForComposition(clips: Clip[]) {
+  return [...clips].sort((a, b) => a.trackIndex - b.trackIndex)
 }
 
 export function VideoComposition({
@@ -362,12 +369,11 @@ export function VideoComposition({
       }}
     >
       <AbsoluteFill style={{ overflow: 'hidden' }}>
-        {clips.map((clip) => (
+        {sortClipsForComposition(clips).map((clip) => (
           <Sequence
             key={clip.id}
             from={clip.startFrame}
             durationInFrames={clip.durationInFrames}
-            layout="none"
           >
             {renderClip(clip)}
           </Sequence>
@@ -380,7 +386,6 @@ export function VideoComposition({
               key={`outline-${clip.id}`}
               from={clip.startFrame}
               durationInFrames={clip.durationInFrames}
-              layout="none"
             >
               <SelectionOutline
                 clip={clip}

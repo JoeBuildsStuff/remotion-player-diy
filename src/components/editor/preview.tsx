@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Player } from '@remotion/player'
 
 import { VideoComposition } from './composition'
@@ -21,6 +21,29 @@ export function Preview() {
     setIsPlaying,
   } = useEditor()
   const [isDragging, setDragging] = useState(false)
+  const previewRef = useRef<HTMLDivElement | null>(null)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
+
+  useLayoutEffect(() => {
+    const el = previewRef.current
+    if (!el) return
+
+    const measure = () => {
+      const availableWidth = Math.max(0, el.clientWidth - 32)
+      const availableHeight = Math.max(0, el.clientHeight - 32)
+      const scale = Math.min(availableWidth / width, availableHeight / height)
+
+      setCanvasSize({
+        width: Math.max(1, Math.floor(width * scale)),
+        height: Math.max(1, Math.floor(height * scale)),
+      })
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [height, width])
 
   useEffect(() => {
     const p = playerRef.current
@@ -45,7 +68,8 @@ export function Preview() {
 
   return (
     <div
-      className="relative flex flex-1 items-center justify-center bg-secondary/40 p-4"
+      ref={previewRef}
+      className="relative flex min-w-0 flex-1 items-center justify-center bg-secondary/40 p-4"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -60,8 +84,11 @@ export function Preview() {
       }}
     >
       <div
-        className="relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
-        style={{ aspectRatio: `${width} / ${height}` }}
+        className="relative flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
+        style={{
+          width: canvasSize.width,
+          height: canvasSize.height,
+        }}
       >
         {clips.length === 0 ? (
           <p className="px-6 text-center text-sm text-muted-foreground">

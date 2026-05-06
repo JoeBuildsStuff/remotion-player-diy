@@ -206,6 +206,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         playbackRate: 1,
         volumeDb: 0,
         muted: false,
+        visible: true,
         videoFadeInFrames: 0,
         videoFadeOutFrames: 0,
         audioFadeInFrames: 0,

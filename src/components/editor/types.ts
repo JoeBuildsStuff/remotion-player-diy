@@ -25,6 +25,7 @@ export type Clip = {
   playbackRate: number
   volumeDb: number
   muted: boolean
+  visible: boolean
   videoFadeInFrames: number
   videoFadeOutFrames: number
   audioFadeInFrames: number
