@@ -6,7 +6,15 @@ import { TRACKS } from './types'
 const PX_PER_SECOND = 60
 
 export function Timeline() {
-  const { clips, fps, durationInFrames, currentFrame, seekTo } = useEditor()
+  const {
+    clips,
+    fps,
+    durationInFrames,
+    currentFrame,
+    seekTo,
+    selectedClipId,
+    setSelectedClipId,
+  } = useEditor()
   const trackAreaRef = useRef<HTMLDivElement | null>(null)
 
   const totalSeconds = Math.max(1, durationInFrames / fps)
@@ -24,6 +32,7 @@ export function Timeline() {
       Math.max(0, Math.round(seconds * fps)),
     )
     seekTo(frame)
+    setSelectedClipId(null)
   }
 
   const tickCount = Math.max(1, Math.ceil(totalSeconds))
@@ -74,10 +83,17 @@ export function Timeline() {
                         : clip.type === 'audio'
                           ? 'bg-emerald-600/70 border-emerald-400'
                           : 'bg-violet-600/70 border-violet-400'
+                    const isSelected = selectedClipId === clip.id
                     return (
                       <div
                         key={clip.id}
-                        className={`absolute top-0.5 bottom-0.5 overflow-hidden rounded-sm border px-1.5 text-[10px] text-white ${color}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedClipId(clip.id)
+                        }}
+                        className={`absolute top-0.5 bottom-0.5 overflow-hidden rounded-sm border px-1.5 text-[10px] text-white ${color} ${
+                          isSelected ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-zinc-950' : ''
+                        }`}
                         style={{ left, width }}
                         title={clip.name}
                       >

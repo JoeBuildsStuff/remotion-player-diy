@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+import { ClipInspector } from './clip-inspector'
 import { useEditor } from './editor-context'
 
 function formatDuration(frames: number, fps: number) {
@@ -22,8 +23,24 @@ function formatDuration(frames: number, fps: number) {
 }
 
 export function Inspector() {
-  const { width, height, setWidth, setHeight, durationInFrames, fps, clips } =
-    useEditor()
+  const {
+    width,
+    height,
+    setWidth,
+    setHeight,
+    durationInFrames,
+    fps,
+    clips,
+    selectedClipId,
+  } = useEditor()
+
+  const selectedClip = selectedClipId
+    ? clips.find((c) => c.id === selectedClipId) ?? null
+    : null
+
+  if (selectedClip) {
+    return <ClipInspector clip={selectedClip} />
+  }
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-4 border-l border-zinc-800 bg-zinc-900 p-3">

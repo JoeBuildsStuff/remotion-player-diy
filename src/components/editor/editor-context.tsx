@@ -20,6 +20,8 @@ type EditorState = {
   currentFrame: number
   isPlaying: boolean
   playerRef: React.RefObject<PlayerRef | null>
+  selectedClipId: string | null
+  setSelectedClipId: (id: string | null) => void
   setVolume: (v: number) => void
   setWidth: (v: number) => void
   setHeight: (v: number) => void
@@ -73,6 +75,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [clips, setClips] = useState<Clip[]>([])
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
 
   const durationInFrames = useMemo(() => {
     if (clips.length === 0) return FPS * 10 // empty timeline placeholder: 10s
@@ -111,6 +114,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const removeClip = useCallback((id: string) => {
     setClips((prev) => prev.filter((c) => c.id !== id))
+    setSelectedClipId((prev) => (prev === id ? null : prev))
   }, [])
 
   const seekTo = useCallback((frame: number) => {
@@ -142,6 +146,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     currentFrame,
     isPlaying,
     playerRef,
+    selectedClipId,
+    setSelectedClipId,
     setVolume,
     setWidth,
     setHeight,

@@ -13,6 +13,9 @@ export function Preview() {
     height,
     durationInFrames,
     volume,
+    currentFrame,
+    selectedClipId,
+    setSelectedClipId,
     addFiles,
     setCurrentFrame,
     setIsPlaying,
@@ -40,9 +43,22 @@ export function Preview() {
     playerRef.current?.setVolume(volume)
   }, [playerRef, volume, clips.length])
 
+  // Find the video clip under the playhead — this is what clicking the preview selects.
+  const activeVideoClip = clips.find(
+    (c) =>
+      c.type === 'video' &&
+      currentFrame >= c.startFrame &&
+      currentFrame < c.startFrame + c.durationInFrames,
+  )
+  const isActiveSelected =
+    activeVideoClip != null && selectedClipId === activeVideoClip.id
+
   return (
     <div
       className="relative flex flex-1 items-center justify-center bg-zinc-900 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setSelectedClipId(null)
+      }}
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -57,7 +73,12 @@ export function Preview() {
       }}
     >
       <div
-        className="relative flex h-full max-h-full items-center justify-center overflow-hidden rounded-md bg-black shadow-2xl"
+        onClick={() => {
+          if (activeVideoClip) setSelectedClipId(activeVideoClip.id)
+        }}
+        className={`relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-hidden rounded-md bg-black shadow-2xl ${
+          isActiveSelected ? 'outline outline-2 outline-offset-2 outline-blue-500' : ''
+        }`}
         style={{ aspectRatio: `${width} / ${height}` }}
       >
         {clips.length === 0 ? (
