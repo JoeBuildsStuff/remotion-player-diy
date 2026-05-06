@@ -1,4 +1,8 @@
 import {
+  useMemo,
+  useState,
+} from 'react'
+import {
   AlignCenterHorizontal,
   AlignCenterVertical,
   AlignEndHorizontal,
@@ -21,6 +25,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { useEditor } from './editor-context'
@@ -41,19 +46,128 @@ function formatClipDuration(frames: number, fps: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n))
+}
+
 type Props = {
   clip: Clip
 }
 
 export function ClipInspector({ clip }: Props) {
-  const { fps, width, height } = useEditor()
+  const {
+    fps,
+    width: canvasWidth,
+    height: canvasHeight,
+    updateClip,
+  } = useEditor()
   const fakeBytes = 63 * 1024 * 1024
+  const [lockAspectRatio, setLockAspectRatio] = useState(false)
+
+  const horizontalAlignment = useMemo(() => {
+    if (clip.x === 0) return 'left'
+    if (Math.round(clip.x) === Math.round((canvasWidth - clip.width) / 2)) {
+      return 'center-h'
+    }
+    if (Math.round(clip.x) === canvasWidth - clip.width) return 'right'
+    return undefined
+  }, [canvasWidth, clip.width, clip.x])
+
+  const verticalAlignment = useMemo(() => {
+    if (clip.y === 0) return 'top'
+    if (Math.round(clip.y) === Math.round((canvasHeight - clip.height) / 2)) {
+      return 'center-v'
+    }
+    if (Math.round(clip.y) === canvasHeight - clip.height) return 'bottom'
+    return undefined
+  }, [canvasHeight, clip.height, clip.y])
+
+  const toNumber = (value: string) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const secondsToFrames = (seconds: number) => Math.round(seconds * fps)
+  const framesToSeconds = (frames: number) => frames / fps
+
+  const alignHorizontally = (value: string) => {
+    if (!value) return
+    if (value === 'left') updateClip(clip.id, { x: 0 })
+    if (value === 'center-h') {
+      updateClip(clip.id, { x: Math.round((canvasWidth - clip.width) / 2) })
+    }
+    if (value === 'right') updateClip(clip.id, { x: canvasWidth - clip.width })
+  }
+
+  const alignVertically = (value: string) => {
+    if (!value) return
+    if (value === 'top') updateClip(clip.id, { y: 0 })
+    if (value === 'center-v') {
+      updateClip(clip.id, { y: Math.round((canvasHeight - clip.height) / 2) })
+    }
+    if (value === 'bottom') updateClip(clip.id, { y: canvasHeight - clip.height })
+  }
+
+  const handleWidthChange = (value: string) => {
+    const nextWidth = toNumber(value)
+    if (nextWidth == null || nextWidth <= 0) return
+    if (!lockAspectRatio || clip.width === 0) {
+      updateClip(clip.id, { width: nextWidth })
+      return
+    }
+    const nextHeight = Math.max(
+      1,
+      Math.round((nextWidth / clip.width) * clip.height),
+    )
+    updateClip(clip.id, { width: nextWidth, height: nextHeight })
+  }
+
+  const handleHeightChange = (value: string) => {
+    const nextHeight = toNumber(value)
+    if (nextHeight == null || nextHeight <= 0) return
+    if (!lockAspectRatio || clip.height === 0) {
+      updateClip(clip.id, { height: nextHeight })
+      return
+    }
+    const nextWidth = Math.max(
+      1,
+      Math.round((nextHeight / clip.height) * clip.width),
+    )
+    updateClip(clip.id, { width: nextWidth, height: nextHeight })
+  }
+
+  const handleTrimBeforeChange = (seconds: number) => {
+    const nextTrimBefore = clamp(
+      secondsToFrames(seconds),
+      0,
+      Math.max(0, clip.sourceDurationInFrames - 1),
+    )
+    const nextTrimAfter =
+      clip.trimAfterFrames != null && clip.trimAfterFrames <= nextTrimBefore
+        ? nextTrimBefore + 1
+        : clip.trimAfterFrames
+    updateClip(clip.id, {
+      trimBeforeFrames: nextTrimBefore,
+      trimAfterFrames: nextTrimAfter,
+    })
+  }
+
+  const handleTrimAfterChange = (seconds: number) => {
+    const nextTrimAfter = seconds <= 0
+      ? null
+      : clamp(
+          secondsToFrames(seconds),
+          clip.trimBeforeFrames + 1,
+          clip.sourceDurationInFrames,
+        )
+    updateClip(clip.id, { trimAfterFrames: nextTrimAfter })
+  }
 
   return (
     <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l">
       <Accordion
         type="multiple"
-        defaultValue={['source', 'layout', 'fill', 'crop', 'video', 'audio']}
+        defaultValue={['source', 'timing', 'layout', 'fill', 'crop', 'video', 'audio']}
         className="rounded-none border-0"
       >
         <Section value="source" title="Source">
@@ -71,6 +185,108 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
+        <Section value="timing" title="Timing">
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Timeline</Label>
+              <div className="flex gap-1.5">
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>Start</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={framesToSeconds(clip.startFrame).toFixed(1)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, {
+                        startFrame: Math.max(0, secondsToFrames(n)),
+                      })
+                    }}
+                  />
+                  <InputGroupAddon>
+                    <InputGroupText>s</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>Length</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    min={1 / fps}
+                    step={0.1}
+                    value={framesToSeconds(clip.durationInFrames).toFixed(1)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, {
+                        durationInFrames: Math.max(1, secondsToFrames(n)),
+                      })
+                    }}
+                  />
+                  <InputGroupAddon>
+                    <InputGroupText>s</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+              </div>
+            </div>
+
+            {(clip.type === 'video' || clip.type === 'audio') && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Source Trim</Label>
+                <div className="flex gap-1.5">
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>In</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={framesToSeconds(clip.trimBeforeFrames).toFixed(1)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        handleTrimBeforeChange(n)
+                      }}
+                    />
+                    <InputGroupAddon>
+                      <InputGroupText>s</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>Out</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={
+                        clip.trimAfterFrames == null
+                          ? '0.0'
+                          : framesToSeconds(clip.trimAfterFrames).toFixed(1)
+                      }
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        handleTrimAfterChange(n)
+                      }}
+                    />
+                    <InputGroupAddon>
+                      <InputGroupText>s</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+
         <Section value="layout" title="Layout">
           <div className="space-y-3">
             <div className="space-y-2">
@@ -79,6 +295,8 @@ export function ClipInspector({ clip }: Props) {
                 <ToggleGroup
                   type="single"
                   variant="outline"
+                  value={horizontalAlignment ?? ''}
+                  onValueChange={alignHorizontally}
                   className="flex-1"
                 >
                   <ToggleGroupItem
@@ -103,6 +321,8 @@ export function ClipInspector({ clip }: Props) {
                 <ToggleGroup
                   type="single"
                   variant="outline"
+                  value={verticalAlignment ?? ''}
+                  onValueChange={alignVertically}
                   className="flex-1"
                 >
                   <ToggleGroupItem
@@ -134,13 +354,29 @@ export function ClipInspector({ clip }: Props) {
                   <InputGroupAddon>
                     <InputGroupText>X</InputGroupText>
                   </InputGroupAddon>
-                  <InputGroupInput defaultValue="0" />
+                  <InputGroupInput
+                    type="number"
+                    value={String(clip.x)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, { x: n })
+                    }}
+                  />
                 </InputGroup>
                 <InputGroup className="flex-1">
                   <InputGroupAddon>
                     <InputGroupText>Y</InputGroupText>
                   </InputGroupAddon>
-                  <InputGroupInput defaultValue="556" />
+                  <InputGroupInput
+                    type="number"
+                    value={String(clip.y)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, { y: n })
+                    }}
+                  />
                 </InputGroup>
               </div>
             </div>
@@ -152,20 +388,36 @@ export function ClipInspector({ clip }: Props) {
                   <InputGroupAddon>
                     <InputGroupText>W</InputGroupText>
                   </InputGroupAddon>
-                  <InputGroupInput defaultValue={String(width)} />
+                  <InputGroupInput
+                    type="number"
+                    min={1}
+                    value={String(clip.width)}
+                    onChange={(e) => handleWidthChange(e.target.value)}
+                  />
                 </InputGroup>
                 <InputGroup className="flex-1">
                   <InputGroupAddon>
                     <InputGroupText>H</InputGroupText>
                   </InputGroupAddon>
-                  <InputGroupInput defaultValue={String(height)} />
+                  <InputGroupInput
+                    type="number"
+                    min={1}
+                    value={String(clip.height)}
+                    onChange={(e) => handleHeightChange(e.target.value)}
+                  />
                 </InputGroup>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="shrink-0"
+                  aria-pressed={lockAspectRatio}
+                  onClick={() => setLockAspectRatio((prev) => !prev)}
                 >
-                  <Link2 className="h-3.5 w-3.5" />
+                  <Link2
+                    className={`h-3.5 w-3.5 ${
+                      lockAspectRatio ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
+                  />
                 </Button>
               </div>
             </div>
@@ -177,12 +429,25 @@ export function ClipInspector({ clip }: Props) {
                   <InputGroupAddon>
                     <DraftingCompass className="h-3 w-3 text-muted-foreground" />
                   </InputGroupAddon>
-                  <InputGroupInput defaultValue="0" />
+                  <InputGroupInput
+                    type="number"
+                    value={String(clip.rotation)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, { rotation: n })
+                    }}
+                  />
                 </InputGroup>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="shrink-0"
+                  onClick={() =>
+                    updateClip(clip.id, {
+                      rotation: (clip.rotation + 90) % 360,
+                    })
+                  }
                 >
                   <RotateCw className="h-3.5 w-3.5" />
                 </Button>
@@ -193,14 +458,29 @@ export function ClipInspector({ clip }: Props) {
 
         <Section value="fill" title="Fill">
           <div className="space-y-3">
-            <SliderRow label="Opacity" value={100} suffix="%" max={100} />
+            <SliderRow
+              label="Opacity"
+              value={Math.round(clip.opacity * 100)}
+              suffix="%"
+              max={100}
+              onChange={(v) => updateClip(clip.id, { opacity: v / 100 })}
+            />
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Corner Radius</Label>
               <InputGroup className="flex-1">
                 <InputGroupAddon>
                   <Squircle className="h-3 w-3 text-muted-foreground" />
                 </InputGroupAddon>
-                <InputGroupInput defaultValue="0" />
+                <InputGroupInput
+                  type="number"
+                  min={0}
+                  value={String(clip.borderRadius)}
+                  onChange={(e) => {
+                    const n = toNumber(e.target.value)
+                    if (n == null) return
+                    updateClip(clip.id, { borderRadius: Math.max(0, n) })
+                  }}
+                />
               </InputGroup>
             </div>
           </div>
@@ -208,10 +488,34 @@ export function ClipInspector({ clip }: Props) {
 
         <Section value="crop" title="Crop">
           <div className="space-y-3">
-            <SliderRow label="Left" value={0} suffix="px" max={500} />
-            <SliderRow label="Top" value={0} suffix="px" max={500} />
-            <SliderRow label="Right" value={0} suffix="px" max={500} />
-            <SliderRow label="Bottom" value={0} suffix="px" max={500} />
+            <SliderRow
+              label="Left"
+              value={clip.cropLeft}
+              suffix="px"
+              max={500}
+              onChange={(v) => updateClip(clip.id, { cropLeft: v })}
+            />
+            <SliderRow
+              label="Top"
+              value={clip.cropTop}
+              suffix="px"
+              max={500}
+              onChange={(v) => updateClip(clip.id, { cropTop: v })}
+            />
+            <SliderRow
+              label="Right"
+              value={clip.cropRight}
+              suffix="px"
+              max={500}
+              onChange={(v) => updateClip(clip.id, { cropRight: v })}
+            />
+            <SliderRow
+              label="Bottom"
+              value={clip.cropBottom}
+              suffix="px"
+              max={500}
+              onChange={(v) => updateClip(clip.id, { cropBottom: v })}
+            />
           </div>
         </Section>
 
@@ -220,25 +524,32 @@ export function ClipInspector({ clip }: Props) {
             <div className="space-y-3">
               <SliderRow
                 label="Playback Rate"
-                value={1}
+                value={clip.playbackRate}
                 min={0.25}
                 max={4}
                 step={0.05}
                 format={(v) => `${v.toFixed(2)}x`}
+                onChange={(v) => updateClip(clip.id, { playbackRate: v })}
               />
               <SliderRow
                 label="Fade In"
-                value={0}
+                value={framesToSeconds(clip.videoFadeInFrames)}
                 max={5}
                 step={0.1}
                 format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { videoFadeInFrames: secondsToFrames(v) })
+                }
               />
               <SliderRow
                 label="Fade Out"
-                value={0}
+                value={framesToSeconds(clip.videoFadeOutFrames)}
                 max={5}
                 step={0.1}
                 format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { videoFadeOutFrames: secondsToFrames(v) })
+                }
               />
             </div>
           </Section>
@@ -247,27 +558,41 @@ export function ClipInspector({ clip }: Props) {
         {(clip.type === 'video' || clip.type === 'audio') && (
           <Section value="audio" title="Audio">
             <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="text-xs text-muted-foreground">Muted</Label>
+                <Switch
+                  checked={clip.muted}
+                  onCheckedChange={(muted) => updateClip(clip.id, { muted })}
+                />
+              </div>
               <SliderRow
                 label="Volume"
-                value={0}
+                value={clip.volumeDb}
                 min={-60}
                 max={12}
                 step={0.1}
                 format={(v) => `${v.toFixed(1)} dB`}
+                onChange={(v) => updateClip(clip.id, { volumeDb: v })}
               />
               <SliderRow
                 label="Fade In"
-                value={0}
+                value={framesToSeconds(clip.audioFadeInFrames)}
                 max={5}
                 step={0.1}
                 format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { audioFadeInFrames: secondsToFrames(v) })
+                }
               />
               <SliderRow
                 label="Fade Out"
-                value={0}
+                value={framesToSeconds(clip.audioFadeOutFrames)}
                 max={5}
                 step={0.1}
                 format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { audioFadeOutFrames: secondsToFrames(v) })
+                }
               />
             </div>
           </Section>
@@ -315,6 +640,7 @@ function SliderRow({
   step = 1,
   suffix,
   format,
+  onChange,
 }: {
   label: string
   value: number
@@ -323,6 +649,7 @@ function SliderRow({
   step?: number
   suffix?: string
   format?: (v: number) => string
+  onChange?: (v: number) => void
 }) {
   const display = format ? format(value) : `${value}${suffix ?? ''}`
   return (
@@ -330,11 +657,16 @@ function SliderRow({
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-3">
         <Slider
-          defaultValue={[value]}
+          value={[value]}
           min={min}
           max={max}
           step={step}
           className="flex-1"
+          onValueChange={(next) => {
+            const n = next[0]
+            if (n == null) return
+            onChange?.(n)
+          }}
         />
         <span className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
           {display}

@@ -65,7 +65,7 @@ export function TransportBar() {
               size="icon"
               aria-label="Snap"
             >
-              <Magnet className="h-4 w-4 text-blue-400" />
+              <Magnet className="h-4 w-4 text-editor-selection-border" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Snap</TooltipContent>

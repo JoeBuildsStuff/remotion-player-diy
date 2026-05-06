@@ -79,7 +79,7 @@ export function Timeline() {
                     const width = (clip.durationInFrames / fps) * PX_PER_SECOND
                     const color =
                       clip.type === 'video'
-                        ? 'bg-blue-600/70 border-blue-400'
+                        ? 'bg-editor-selection-fill border-editor-selection-border'
                         : clip.type === 'audio'
                           ? 'bg-emerald-600/70 border-emerald-400'
                           : 'bg-violet-600/70 border-violet-400'
@@ -92,7 +92,7 @@ export function Timeline() {
                           setSelectedClipId(clip.id)
                         }}
                         className={`absolute top-0.5 bottom-0.5 overflow-hidden rounded-sm border px-1.5 text-[10px] text-white ${color} ${
-                          isSelected ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-zinc-950' : ''
+                          isSelected ? 'ring-2 ring-editor-selection ring-offset-1 ring-offset-zinc-950' : ''
                         }`}
                         style={{ left, width }}
                         title={clip.name}
@@ -109,10 +109,10 @@ export function Timeline() {
 
           {/* Playhead */}
           <div
-            className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-blue-500"
+            className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-editor-selection"
             style={{ left: playheadLeft }}
           >
-            <div className="absolute -left-1.5 -top-1 h-3 w-3 rotate-45 bg-blue-500" />
+            <div className="absolute -left-1.5 -top-1 h-3 w-3 rotate-45 bg-editor-selection" />
           </div>
         </div>
       </div>

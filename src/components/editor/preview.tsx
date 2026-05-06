@@ -13,10 +13,10 @@ export function Preview() {
     height,
     durationInFrames,
     volume,
-    currentFrame,
     selectedClipId,
     setSelectedClipId,
     addFiles,
+    updateClip,
     setCurrentFrame,
     setIsPlaying,
   } = useEditor()
@@ -43,22 +43,9 @@ export function Preview() {
     playerRef.current?.setVolume(volume)
   }, [playerRef, volume, clips.length])
 
-  // Find the video clip under the playhead — this is what clicking the preview selects.
-  const activeVideoClip = clips.find(
-    (c) =>
-      c.type === 'video' &&
-      currentFrame >= c.startFrame &&
-      currentFrame < c.startFrame + c.durationInFrames,
-  )
-  const isActiveSelected =
-    activeVideoClip != null && selectedClipId === activeVideoClip.id
-
   return (
     <div
       className="relative flex flex-1 items-center justify-center bg-secondary/40 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) setSelectedClipId(null)
-      }}
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -73,12 +60,7 @@ export function Preview() {
       }}
     >
       <div
-        onClick={() => {
-          if (activeVideoClip) setSelectedClipId(activeVideoClip.id)
-        }}
-        className={`relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-hidden rounded-md bg-background shadow-2xl ${
-          isActiveSelected ? 'outline outline-2 outline-offset-2 outline-blue-500' : ''
-        }`}
+        className="relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
         style={{ aspectRatio: `${width} / ${height}` }}
       >
         {clips.length === 0 ? (
@@ -91,19 +73,25 @@ export function Preview() {
           <Player
             ref={playerRef}
             component={VideoComposition}
-            inputProps={{ clips }}
+            inputProps={{
+              clips,
+              selectedClipId,
+              setSelectedClipId,
+              updateClip,
+            }}
             durationInFrames={Math.max(1, durationInFrames)}
             fps={fps}
             compositionWidth={width}
             compositionHeight={height}
             controls={false}
             loop={false}
+            overflowVisible
             style={{ width: '100%', height: '100%' }}
             acknowledgeRemotionLicense
           />
         )}
         {isDragging && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-blue-500 bg-blue-500/10 text-sm text-blue-200">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-ring bg-ring/10 text-sm text-foreground">
             Drop to add to timeline
           </div>
         )}
