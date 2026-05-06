@@ -1,4 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  type DragEndEvent,
+  type DragStartEvent,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import { Eye, EyeOff, Volume2, VolumeX } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -16,28 +26,29 @@ const TRACK_HEADER_WIDTH = 122
 const RULER_HEIGHT = 24
 const TRACK_HEIGHT = 44
 const MIN_CLIP_FRAMES = 1
+const TIMELINE_CLIP_ID_PREFIX = 'item-'
+const TIMELINE_TRACK_ID_PREFIX = 'container-'
 
 type TimelineDrag =
-  | {
-      type: 'move'
-      clipId: string
-      pointerId: number
-      startX: number
-      startFrame: number
-      startTrackIndex: number
-    }
-  | {
-      type: 'resize'
-      side: 'start' | 'end'
-      clipId: string
-      pointerId: number
-      startX: number
-      startFrame: number
-      startDurationInFrames: number
-      startTrimBeforeFrames: number
-      startTrimAfterFrames: number | null
-      sourceDurationInFrames: number
-    }
+  {
+    type: 'resize'
+    side: 'start' | 'end'
+    clipId: string
+    pointerId: number
+    startX: number
+    startFrame: number
+    startDurationInFrames: number
+    startTrimBeforeFrames: number
+    startTrimAfterFrames: number | null
+    sourceDurationInFrames: number
+  }
+
+type ActiveTimelineDrag = {
+  clipId: string
+  startFrame: number
+  startTrackIndex: number
+  tracks: { index: number }[]
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -47,6 +58,27 @@ function clipSourceEnd(
   clip: Pick<Clip, 'sourceDurationInFrames' | 'trimAfterFrames'>,
 ) {
   return clip.trimAfterFrames ?? clip.sourceDurationInFrames
+}
+
+function timelineClipDndId(clipId: string) {
+  return `${TIMELINE_CLIP_ID_PREFIX}${clipId}`
+}
+
+function timelineTrackDndId(trackIndex: number) {
+  return `${TIMELINE_TRACK_ID_PREFIX}${trackIndex}`
+}
+
+function clipIdFromDndId(id: string) {
+  return id.startsWith(TIMELINE_CLIP_ID_PREFIX)
+    ? id.slice(TIMELINE_CLIP_ID_PREFIX.length)
+    : null
+}
+
+function trackIndexFromDndId(id: string) {
+  if (!id.startsWith(TIMELINE_TRACK_ID_PREFIX)) return null
+
+  const index = Number(id.slice(TIMELINE_TRACK_ID_PREFIX.length))
+  return Number.isFinite(index) ? index : null
 }
 
 function timelineTracksFor(clips: Clip[], activeTrackIndexes: number[] = []) {
@@ -62,6 +94,41 @@ function timelineTracksFor(clips: Clip[], activeTrackIndexes: number[] = []) {
   return Array.from(trackIndexes)
     .sort((a, b) => b - a)
     .map((index) => ({ index }))
+}
+
+function dragTrackIndexesFor(tracks: { index: number }[]) {
+  if (tracks.length === 0) return [0]
+
+  return [
+    tracks[0].index + 1,
+    ...tracks.map((track) => track.index),
+    tracks[tracks.length - 1].index - 1,
+  ]
+}
+
+function trackIndexFromRowDelta(
+  tracks: { index: number }[],
+  startTrackIndex: number,
+  deltaY: number,
+) {
+  if (tracks.length === 0) return startTrackIndex
+
+  const startRow = tracks.findIndex((track) => track.index === startTrackIndex)
+  if (startRow === -1) return startTrackIndex
+
+  const row = startRow + Math.round(deltaY / TRACK_HEIGHT)
+  if (row < 0) return tracks[0].index + Math.abs(row)
+  if (row >= tracks.length) {
+    return tracks[tracks.length - 1].index - (row - tracks.length + 1)
+  }
+
+  return tracks[row].index
+}
+
+function translateStyle(transform: { x: number; y: number } | null) {
+  if (!transform) return undefined
+
+  return `translate3d(${transform.x}px, ${transform.y}px, 0)`
 }
 
 function patchResizeStart(
@@ -119,8 +186,16 @@ export function Timeline() {
   } = useEditor()
   const trackAreaRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<TimelineDrag | null>(null)
+  const [activeDrag, setActiveDrag] = useState<ActiveTimelineDrag | null>(null)
   const [dragTrackIndexes, setDragTrackIndexes] = useState<number[] | null>(
     null,
+  )
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    }),
   )
 
   const totalSeconds = Math.max(1, durationInFrames / fps)
@@ -145,58 +220,6 @@ export function Timeline() {
     )
     seekTo(frame)
     setSelectedClipId(null)
-  }
-
-  const startClipDrag = (
-    e: React.PointerEvent<HTMLDivElement>,
-    clipId: string,
-    startFrame: number,
-    startTrackIndex: number,
-  ) => {
-    if (e.button !== 0) return
-    e.stopPropagation()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    setSelectedClipId(clipId)
-    setDragTrackIndexes(timelineTracks.map((track) => track.index))
-    dragRef.current = {
-      type: 'move',
-      clipId,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startFrame,
-      startTrackIndex,
-    }
-  }
-
-  const trackIndexFromPointerY = (clientY: number) => {
-    const el = trackAreaRef.current
-    if (!el) return null
-    const rect = el.getBoundingClientRect()
-    const y = clientY - rect.top - RULER_HEIGHT
-    const row = Math.floor(y / TRACK_HEIGHT)
-    if (timelineTracks.length === 0) return 0
-    if (row < 0) return timelineTracks[0].index + 1
-    if (row >= timelineTracks.length) {
-      return timelineTracks[timelineTracks.length - 1].index - 1
-    }
-    return timelineTracks[row].index
-  }
-
-  const handleClipDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current
-    if (!drag || drag.pointerId !== e.pointerId) return
-    if (drag.type !== 'move') return
-    const deltaFrames = Math.round(
-      ((e.clientX - drag.startX) / PX_PER_SECOND) * fps,
-    )
-    const nextTrackIndex =
-      trackIndexFromPointerY(e.clientY) ?? drag.startTrackIndex
-
-    if (deltaFrames === 0 && nextTrackIndex === drag.startTrackIndex) return
-    updateClip(drag.clipId, {
-      startFrame: Math.max(0, drag.startFrame + deltaFrames),
-      trackIndex: nextTrackIndex,
-    })
   }
 
   const startClipResize = (
@@ -237,11 +260,62 @@ export function Timeline() {
     )
   }
 
-  const endClipDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+  const endClipResize = (e: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current
     if (!drag || drag.pointerId !== e.pointerId) return
     dragRef.current = null
     setDragTrackIndexes(null)
+  }
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const clipId = clipIdFromDndId(String(active.id))
+    if (!clipId) return
+
+    const clip = clips.find((item) => item.id === clipId)
+    if (!clip) return
+
+    const tracks = timelineTracksFor(clips)
+    setSelectedClipId(clip.id)
+    setActiveDrag({
+      clipId: clip.id,
+      startFrame: clip.startFrame,
+      startTrackIndex: clip.trackIndex,
+      tracks,
+    })
+    setDragTrackIndexes(dragTrackIndexesFor(tracks))
+  }
+
+  const resetDragState = () => {
+    setActiveDrag(null)
+    setDragTrackIndexes(null)
+  }
+
+  const handleDragEnd = ({ active, delta, over }: DragEndEvent) => {
+    const clipId = clipIdFromDndId(String(active.id))
+    if (!activeDrag || activeDrag.clipId !== clipId) {
+      resetDragState()
+      return
+    }
+
+    const deltaFrames = Math.round((delta.x / PX_PER_SECOND) * fps)
+    const overTrackIndex = over ? trackIndexFromDndId(String(over.id)) : null
+    const nextTrackIndex =
+      overTrackIndex ??
+      trackIndexFromRowDelta(
+        activeDrag.tracks,
+        activeDrag.startTrackIndex,
+        delta.y,
+      )
+
+    updateClip(clipId, {
+      startFrame: Math.max(0, activeDrag.startFrame + deltaFrames),
+      trackIndex: nextTrackIndex,
+    })
+    resetDragState()
+  }
+
+  const handleDragCancel = () => {
+    resetDragState()
   }
 
   const toggleTrackVisibility = (trackIndex: number) => {
@@ -329,120 +403,209 @@ export function Timeline() {
         })}
       </div>
 
-      <div
-        ref={trackAreaRef}
-        onClick={handleSeek}
-        className="relative h-full cursor-pointer overflow-x-auto overflow-y-hidden"
-        style={{ paddingLeft: TRACK_HEADER_WIDTH }}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <div
-          className="relative h-full min-w-full"
-          style={{ width: Math.max(trackWidth, 1) }}
+          ref={trackAreaRef}
+          onClick={handleSeek}
+          className="relative h-full cursor-pointer overflow-x-auto overflow-y-hidden"
+          style={{ paddingLeft: TRACK_HEADER_WIDTH }}
         >
-          {/* Ruler */}
-          <div className="sticky top-0 h-6 border-b border-border bg-secondary/40">
-            <div className="relative h-full">
-              {Array.from({ length: tickCount + 1 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute top-0 h-full border-l border-border"
-                  style={{ left: i * PX_PER_SECOND }}
+          <div
+            className="relative h-full min-w-full"
+            style={{ width: Math.max(trackWidth, 1) }}
+          >
+            {/* Ruler */}
+            <div className="sticky top-0 h-6 border-b border-border bg-secondary/40">
+              <div className="relative h-full">
+                {Array.from({ length: tickCount + 1 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute top-0 h-full border-l border-border"
+                    style={{ left: i * PX_PER_SECOND }}
+                  >
+                    <span className="absolute left-1 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
+                      {`00:${String(i).padStart(2, '0')}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tracks */}
+            <div className="relative">
+              {timelineTracks.map((track) => (
+                <TimelineTrack
+                  key={track.index}
+                  trackIndex={track.index}
                 >
-                  <span className="absolute left-1 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
-                    {`00:${String(i).padStart(2, '0')}`}
-                  </span>
-                </div>
+                  {clips
+                    .filter((c) => c.trackIndex === track.index)
+                    .map((clip) => {
+                      const left = (clip.startFrame / fps) * PX_PER_SECOND
+                      const width =
+                        (clip.durationInFrames / fps) * PX_PER_SECOND
+                      const canResizeStart =
+                        clip.durationInFrames > MIN_CLIP_FRAMES ||
+                        (clip.startFrame > 0 && clip.trimBeforeFrames > 0)
+                      const canResizeEnd =
+                        clip.durationInFrames > MIN_CLIP_FRAMES ||
+                        clipSourceEnd(clip) < clip.sourceDurationInFrames
+                      const color =
+                        clip.type === 'video'
+                          ? 'bg-editor-selection-fill border-editor-selection-border'
+                          : clip.type === 'audio'
+                            ? 'bg-secondary border-border'
+                            : 'bg-muted border-border'
+                      const isSelected = selectedClipId === clip.id
+                      const isHidden = clip.visible === false
+                      return (
+                        <TimelineClip
+                          key={clip.id}
+                          clip={clip}
+                          color={color}
+                          isSelected={isSelected}
+                          isHidden={isHidden}
+                          left={left}
+                          width={width}
+                          canResizeStart={canResizeStart}
+                          canResizeEnd={canResizeEnd}
+                          setSelectedClipId={setSelectedClipId}
+                          startClipResize={startClipResize}
+                          handleClipResize={handleClipResize}
+                          endClipResize={endClipResize}
+                        />
+                      )
+                    })}
+                </TimelineTrack>
               ))}
             </div>
-          </div>
 
-          {/* Tracks */}
-          <div className="relative">
-            {timelineTracks.map((track) => (
-              <div
-                key={track.index}
-                className="relative border-b border-border/60"
-                style={{ height: TRACK_HEIGHT }}
-              >
-                {clips
-                  .filter((c) => c.trackIndex === track.index)
-                  .map((clip) => {
-                    const left = (clip.startFrame / fps) * PX_PER_SECOND
-                    const width = (clip.durationInFrames / fps) * PX_PER_SECOND
-                    const canResizeStart =
-                      clip.durationInFrames > MIN_CLIP_FRAMES ||
-                      (clip.startFrame > 0 && clip.trimBeforeFrames > 0)
-                    const canResizeEnd =
-                      clip.durationInFrames > MIN_CLIP_FRAMES ||
-                      clipSourceEnd(clip) < clip.sourceDurationInFrames
-                    const color =
-                      clip.type === 'video'
-                        ? 'bg-editor-selection-fill border-editor-selection-border'
-                        : clip.type === 'audio'
-                          ? 'bg-secondary border-border'
-                          : 'bg-muted border-border'
-                    const isSelected = selectedClipId === clip.id
-                    const isHidden = clip.visible === false
-                    return (
-                      <div
-                        key={clip.id}
-                        onPointerDown={(e) =>
-                          startClipDrag(
-                            e,
-                            clip.id,
-                            clip.startFrame,
-                            clip.trackIndex,
-                          )
-                        }
-                        onPointerMove={handleClipDrag}
-                        onPointerMoveCapture={handleClipResize}
-                        onPointerUp={endClipDrag}
-                        onPointerCancel={endClipDrag}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedClipId(clip.id)
-                        }}
-                        className={`group absolute top-1 bottom-1 touch-none select-none overflow-hidden rounded-sm border px-1.5 text-[10px] text-foreground shadow-sm ${
-                          isHidden ? 'opacity-45' : ''
-                        } ${color} ${
-                          isSelected ? 'ring-2 ring-editor-selection ring-offset-1 ring-offset-background' : ''
-                        }`}
-                        style={{ left, width }}
-                        title={clip.name}
-                      >
-                        <TimelineResizeHandle
-                          side="start"
-                          disabled={!canResizeStart}
-                          selected={isSelected}
-                          onPointerDown={(e) =>
-                            startClipResize(e, clip, 'start')
-                          }
-                        />
-                        <span className="block truncate leading-9">
-                          {clip.name}
-                        </span>
-                        <TimelineResizeHandle
-                          side="end"
-                          disabled={!canResizeEnd}
-                          selected={isSelected}
-                          onPointerDown={(e) => startClipResize(e, clip, 'end')}
-                        />
-                      </div>
-                    )
-                  })}
-              </div>
-            ))}
-          </div>
-
-          {/* Playhead */}
-          <div
-            className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-editor-selection"
-            style={{ left: playheadLeft }}
-          >
-            <div className="absolute -left-1.5 -top-1 h-3 w-3 rotate-45 bg-editor-selection" />
+            {/* Playhead */}
+            <div
+              className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-editor-selection"
+              style={{ left: playheadLeft }}
+            >
+              <div className="absolute -left-1.5 -top-1 h-3 w-3 rotate-45 bg-editor-selection" />
+            </div>
           </div>
         </div>
-      </div>
+      </DndContext>
+    </div>
+  )
+}
+
+function TimelineClip({
+  clip,
+  color,
+  isSelected,
+  isHidden,
+  left,
+  width,
+  canResizeStart,
+  canResizeEnd,
+  setSelectedClipId,
+  startClipResize,
+  handleClipResize,
+  endClipResize,
+}: {
+  clip: Clip
+  color: string
+  isSelected: boolean
+  isHidden: boolean
+  left: number
+  width: number
+  canResizeStart: boolean
+  canResizeEnd: boolean
+  setSelectedClipId: (id: string | null) => void
+  startClipResize: (
+    e: React.PointerEvent<HTMLDivElement>,
+    clip: Clip,
+    side: 'start' | 'end',
+  ) => void
+  handleClipResize: (e: React.PointerEvent<HTMLDivElement>) => void
+  endClipResize: (e: React.PointerEvent<HTMLDivElement>) => void
+}) {
+  const { attributes, isDragging, listeners, setNodeRef, transform } =
+    useDraggable({
+      id: timelineClipDndId(clip.id),
+      attributes: {
+        roleDescription: 'timeline clip',
+      },
+    })
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      onPointerDown={(e) => {
+        listeners?.onPointerDown?.(e)
+        e.stopPropagation()
+        setSelectedClipId(clip.id)
+      }}
+      onPointerMoveCapture={handleClipResize}
+      onPointerUp={endClipResize}
+      onPointerCancel={endClipResize}
+      onClick={(e) => {
+        e.stopPropagation()
+        setSelectedClipId(clip.id)
+      }}
+      className={`group absolute top-1 bottom-1 touch-none select-none overflow-hidden rounded-sm border px-1.5 text-[10px] text-foreground shadow-sm ${
+        isHidden ? 'opacity-45' : ''
+      } ${color} ${
+        isSelected ? 'ring-2 ring-editor-selection ring-offset-1 ring-offset-background' : ''
+      } ${isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab'}`}
+      style={{
+        left,
+        width,
+        transform: translateStyle(transform),
+      }}
+      title={clip.name}
+    >
+      <TimelineResizeHandle
+        side="start"
+        disabled={!canResizeStart}
+        selected={isSelected}
+        onPointerDown={(e) => startClipResize(e, clip, 'start')}
+      />
+      <span className="block truncate leading-9">{clip.name}</span>
+      <TimelineResizeHandle
+        side="end"
+        disabled={!canResizeEnd}
+        selected={isSelected}
+        onPointerDown={(e) => startClipResize(e, clip, 'end')}
+      />
+    </div>
+  )
+}
+
+function TimelineTrack({
+  trackIndex,
+  children,
+}: {
+  trackIndex: number
+  children: React.ReactNode
+}) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: timelineTrackDndId(trackIndex),
+    data: {
+      trackIndex,
+    },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`relative border-b border-border/60 ${
+        isOver ? 'bg-secondary/40' : ''
+      }`}
+      style={{ height: TRACK_HEIGHT }}
+    >
+      {children}
     </div>
   )
 }

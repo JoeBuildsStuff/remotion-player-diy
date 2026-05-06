@@ -1,4 +1,18 @@
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useRef,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+  useDraggable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import {
   AbsoluteFill,
   Audio,
@@ -24,6 +38,15 @@ type VideoCompositionProps = {
 const MIN_CLIP_SIZE = 20
 const HANDLE_SIZE = 12
 const HANDLE_HIT_SIZE = 20
+
+type ClipDragData = {
+  clipId: string
+  x: number
+  y: number
+  scale: number
+}
+
+type ActiveClipDrag = ClipDragData
 
 const RESIZE_HANDLES: {
   handle: ResizeHandle
@@ -130,32 +153,18 @@ function SelectionOutline({
   const borderWidth = Math.ceil(2 / scale)
   const handleSize = HANDLE_SIZE / scale
   const hitSize = HANDLE_HIT_SIZE / scale
-
-  const startMove = (e: ReactPointerEvent) => {
-    e.stopPropagation()
-    if (e.button !== 0) return
-
-    setSelectedClipId(clip.id)
-    const initialX = e.clientX
-    const initialY = e.clientY
-
-    const onPointerMove = (pointerMoveEvent: PointerEvent) => {
-      const dx = (pointerMoveEvent.clientX - initialX) / scale
-      const dy = (pointerMoveEvent.clientY - initialY) / scale
-
-      updateClip(clip.id, {
-        x: Math.round(clip.x + dx),
-        y: Math.round(clip.y + dy),
-      })
-    }
-
-    const onPointerUp = () => {
-      window.removeEventListener('pointermove', onPointerMove)
-    }
-
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('pointerup', onPointerUp, { once: true })
-  }
+  const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
+    id: clip.id,
+    data: {
+      clipId: clip.id,
+      x: clip.x,
+      y: clip.y,
+      scale,
+    } satisfies ClipDragData,
+    attributes: {
+      roleDescription: 'canvas clip',
+    },
+  })
 
   const startResize = (e: ReactPointerEvent, handle: ResizeHandle) => {
     e.stopPropagation()
@@ -180,7 +189,13 @@ function SelectionOutline({
 
   return (
     <div
-      onPointerDown={startMove}
+      ref={setNodeRef}
+      {...attributes}
+      onPointerDown={(e) => {
+        listeners?.onPointerDown?.(e)
+        e.stopPropagation()
+        if (e.button === 0) setSelectedClipId(clip.id)
+      }}
       style={{
         position: 'absolute',
         left: clip.x,
@@ -192,7 +207,7 @@ function SelectionOutline({
           : undefined,
         transform: `rotate(${clip.rotation}deg)`,
         transformOrigin: 'center',
-        cursor: 'move',
+        cursor: isDragging ? 'grabbing' : 'grab',
         userSelect: 'none',
         touchAction: 'none',
       }}
@@ -360,42 +375,84 @@ export function VideoComposition({
   updateClip,
 }: VideoCompositionProps) {
   const canEdit = setSelectedClipId != null && updateClip != null
+  const activeClipDragRef = useRef<ActiveClipDrag | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    }),
+  )
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const data = active.data.current as ClipDragData | undefined
+    activeClipDragRef.current = data ?? null
+  }
+
+  const updateDraggedClipPosition = (delta: DragMoveEvent['delta']) => {
+    const drag = activeClipDragRef.current
+    if (!drag || !updateClip) return
+
+    updateClip(drag.clipId, {
+      x: Math.round(drag.x + delta.x / drag.scale),
+      y: Math.round(drag.y + delta.y / drag.scale),
+    })
+  }
+
+  const handleDragMove = ({ delta }: DragMoveEvent) => {
+    updateDraggedClipPosition(delta)
+  }
+
+  const handleDragEnd = ({ delta }: DragEndEvent) => {
+    updateDraggedClipPosition(delta)
+    activeClipDragRef.current = null
+  }
 
   return (
-    <AbsoluteFill
-      style={{ backgroundColor: 'black' }}
-      onPointerDown={(e) => {
-        if (canEdit && e.button === 0) setSelectedClipId(null)
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        activeClipDragRef.current = null
       }}
     >
-      <AbsoluteFill style={{ overflow: 'hidden' }}>
-        {sortClipsForComposition(clips).map((clip) => (
-          <Sequence
-            key={clip.id}
-            from={clip.startFrame}
-            durationInFrames={clip.durationInFrames}
-          >
-            {renderClip(clip)}
-          </Sequence>
-        ))}
-      </AbsoluteFill>
-
-      {canEdit
-        ? sortOutlines(clips, selectedClipId).map((clip) => (
+      <AbsoluteFill
+        style={{ backgroundColor: 'black' }}
+        onPointerDown={(e) => {
+          if (canEdit && e.button === 0) setSelectedClipId(null)
+        }}
+      >
+        <AbsoluteFill style={{ overflow: 'hidden' }}>
+          {sortClipsForComposition(clips).map((clip) => (
             <Sequence
-              key={`outline-${clip.id}`}
+              key={clip.id}
               from={clip.startFrame}
               durationInFrames={clip.durationInFrames}
             >
-              <SelectionOutline
-                clip={clip}
-                isSelected={clip.id === selectedClipId}
-                setSelectedClipId={setSelectedClipId}
-                updateClip={updateClip}
-              />
+              {renderClip(clip)}
             </Sequence>
-          ))
-        : null}
-    </AbsoluteFill>
+          ))}
+        </AbsoluteFill>
+
+        {canEdit
+          ? sortOutlines(clips, selectedClipId).map((clip) => (
+              <Sequence
+                key={`outline-${clip.id}`}
+                from={clip.startFrame}
+                durationInFrames={clip.durationInFrames}
+              >
+                <SelectionOutline
+                  clip={clip}
+                  isSelected={clip.id === selectedClipId}
+                  setSelectedClipId={setSelectedClipId}
+                  updateClip={updateClip}
+                />
+              </Sequence>
+            ))
+          : null}
+      </AbsoluteFill>
+    </DndContext>
   )
 }
