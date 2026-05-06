@@ -11,9 +11,8 @@ export function Editor() {
   return (
     <EditorProvider>
       <TooltipProvider>
-        <div className="dark flex h-screen w-screen flex-col overflow-hidden bg-zinc-900 text-zinc-100">
+        <div className="dark flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
           <Toolbar />
-
           <div className="flex min-h-0 flex-1">
             <Preview />
             <Inspector />

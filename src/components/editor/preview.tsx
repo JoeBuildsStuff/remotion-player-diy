@@ -55,7 +55,7 @@ export function Preview() {
 
   return (
     <div
-      className="relative flex flex-1 items-center justify-center bg-zinc-900 p-4"
+      className="relative flex flex-1 items-center justify-center bg-secondary/40 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) setSelectedClipId(null)
       }}
@@ -76,13 +76,13 @@ export function Preview() {
         onClick={() => {
           if (activeVideoClip) setSelectedClipId(activeVideoClip.id)
         }}
-        className={`relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-hidden rounded-md bg-black shadow-2xl ${
+        className={`relative flex h-full max-h-full cursor-pointer items-center justify-center overflow-hidden rounded-md bg-background shadow-2xl ${
           isActiveSelected ? 'outline outline-2 outline-offset-2 outline-blue-500' : ''
         }`}
         style={{ aspectRatio: `${width} / ${height}` }}
       >
         {clips.length === 0 ? (
-          <p className="px-6 text-center text-sm text-zinc-500">
+          <p className="px-6 text-center text-sm text-muted-foreground">
             Drop videos, images, or audio
             <br />
             here to get started.

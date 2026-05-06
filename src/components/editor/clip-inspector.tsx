@@ -6,10 +6,10 @@ import {
   AlignStartHorizontal,
   AlignStartVertical,
   Cloud,
+  DraftingCompass,
   Link2,
   RotateCw,
   Squircle,
-  Triangle,
 } from 'lucide-react'
 
 import {
@@ -19,13 +19,13 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { useEditor } from './editor-context'
 import type { Clip } from './types'
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '../ui/input-group'
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
@@ -50,7 +50,7 @@ export function ClipInspector({ clip }: Props) {
   const fakeBytes = 63 * 1024 * 1024
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-zinc-800 bg-zinc-900">
+    <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l">
       <Accordion
         type="multiple"
         defaultValue={['source', 'layout', 'fill', 'crop', 'video', 'audio']}
@@ -58,13 +58,13 @@ export function ClipInspector({ clip }: Props) {
       >
         <Section value="source" title="Source">
           <div className="space-y-1">
-            <p className="truncate text-xs text-zinc-300" title={clip.name}>
+            <p className="truncate text-xs text-foreground" title={clip.name}>
               {clip.name}
             </p>
-            <p className="font-mono text-xs text-zinc-400">
+            <p className="font-mono text-xs text-muted-foreground">
               {formatClipDuration(clip.durationInFrames, fps)}
             </p>
-            <p className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Cloud className="h-3.5 w-3.5" />
               {formatBytes(fakeBytes)}
             </p>
@@ -74,50 +74,52 @@ export function ClipInspector({ clip }: Props) {
         <Section value="layout" title="Layout">
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Alignment</Label>
+              <Label className="text-xs text-muted-foreground">Alignment</Label>
               <div className="flex gap-1.5">
                 <ToggleGroup
                   type="single"
-                  className="flex-1 rounded-md bg-zinc-800/80 p-0.5"
+                  variant="outline"
+                  className="flex-1"
                 >
                   <ToggleGroupItem
                     value="left"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignStartVertical className="h-4 w-4" />
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="center-h"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignCenterVertical className="h-4 w-4" />
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="right"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignEndVertical className="h-4 w-4" />
                   </ToggleGroupItem>
                 </ToggleGroup>
                 <ToggleGroup
                   type="single"
-                  className="flex-1 rounded-md bg-zinc-800/80 p-0.5"
+                  variant="outline"
+                  className="flex-1"
                 >
                   <ToggleGroupItem
                     value="top"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignStartHorizontal className="h-4 w-4" />
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="center-v"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignCenterHorizontal className="h-4 w-4" />
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="bottom"
-                    className="h-7 flex-1 text-zinc-300 data-[state=on]:bg-zinc-700 data-[state=on]:text-zinc-50"
+                    className="flex-1"
                   >
                     <AlignEndHorizontal className="h-4 w-4" />
                   </ToggleGroupItem>
@@ -126,22 +128,42 @@ export function ClipInspector({ clip }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Position</Label>
+              <Label className="text-xs text-muted-foreground">Position</Label>
               <div className="flex gap-1.5">
-                <PrefixedInput prefix="X" defaultValue="0" />
-                <PrefixedInput prefix="Y" defaultValue="556" />
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>X</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput defaultValue="0" />
+                </InputGroup>
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>Y</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput defaultValue="556" />
+                </InputGroup>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Dimensions</Label>
+              <Label className="text-xs text-muted-foreground">Dimensions</Label>
               <div className="flex items-center gap-1.5">
-                <PrefixedInput prefix="W" defaultValue={String(width)} />
-                <PrefixedInput prefix="H" defaultValue={String(height)} />
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>W</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput defaultValue={String(width)} />
+                </InputGroup>
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>H</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput defaultValue={String(height)} />
+                </InputGroup>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="h-8 w-8 shrink-0 border-zinc-700 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 hover:text-blue-300"
+                  className="shrink-0"
                 >
                   <Link2 className="h-3.5 w-3.5" />
                 </Button>
@@ -149,18 +171,18 @@ export function ClipInspector({ clip }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Rotation</Label>
+              <Label className="text-xs text-muted-foreground">Rotation</Label>
               <div className="flex items-center gap-1.5">
-                <PrefixedInput
-                  prefix={
-                    <Triangle className="h-3 w-3 -rotate-90 fill-zinc-500 text-zinc-500" />
-                  }
-                  defaultValue="0"
-                />
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <DraftingCompass className="h-3 w-3 text-muted-foreground" />
+                  </InputGroupAddon>
+                  <InputGroupInput defaultValue="0" />
+                </InputGroup>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="h-8 w-8 shrink-0 border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-zinc-50"
+                  className="shrink-0"
                 >
                   <RotateCw className="h-3.5 w-3.5" />
                 </Button>
@@ -173,11 +195,13 @@ export function ClipInspector({ clip }: Props) {
           <div className="space-y-3">
             <SliderRow label="Opacity" value={100} suffix="%" max={100} />
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Corner Radius</Label>
-              <PrefixedInput
-                prefix={<Squircle className="h-3 w-3 text-zinc-500" />}
-                defaultValue="0"
-              />
+              <Label className="text-xs text-muted-foreground">Corner Radius</Label>
+              <InputGroup className="flex-1">
+                <InputGroupAddon>
+                  <Squircle className="h-3 w-3 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput defaultValue="0" />
+              </InputGroup>
             </div>
           </div>
         </Section>
@@ -251,7 +275,7 @@ export function ClipInspector({ clip }: Props) {
 
         {clip.type === 'video' && (
           <Section value="captions" title="Captions" last>
-            <p className="text-xs text-zinc-500">No captions yet.</p>
+            <p className="text-xs text-muted-foreground">No captions yet.</p>
           </Section>
         )}
       </Accordion>
@@ -273,33 +297,13 @@ function Section({
   return (
     <AccordionItem
       value={value}
-      className={`border-zinc-800 data-open:bg-transparent ${last ? 'border-b' : ''}`}
+      className={`border-muted-foreground/20 data-open:bg-transparent ${last ? 'border-b' : ''}`}
     >
-      <AccordionTrigger className="px-3 text-xs font-semibold text-zinc-100 hover:no-underline">
+      <AccordionTrigger className="text-xs font-semibold text-foreground hover:no-underline">
         {title}
       </AccordionTrigger>
-      <AccordionContent className="px-3">{children}</AccordionContent>
+      <AccordionContent className="px-1">{children}</AccordionContent>
     </AccordionItem>
-  )
-}
-
-function PrefixedInput({
-  prefix,
-  defaultValue,
-}: {
-  prefix: React.ReactNode
-  defaultValue: string
-}) {
-  return (
-    <div className="relative flex-1">
-      <span className="pointer-events-none absolute left-2.5 top-1/2 flex -translate-y-1/2 items-center text-xs text-zinc-500">
-        {prefix}
-      </span>
-      <Input
-        defaultValue={defaultValue}
-        className="h-7 border-zinc-700 bg-zinc-800 pl-6 text-xs text-zinc-100"
-      />
-    </div>
   )
 }
 
@@ -323,7 +327,7 @@ function SliderRow({
   const display = format ? format(value) : `${value}${suffix ?? ''}`
   return (
     <div className="space-y-2">
-      <Label className="text-xs text-zinc-400">{label}</Label>
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-3">
         <Slider
           defaultValue={[value]}
@@ -332,7 +336,7 @@ function SliderRow({
           step={step}
           className="flex-1"
         />
-        <span className="w-12 shrink-0 text-right font-mono text-xs text-zinc-400">
+        <span className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
           {display}
         </span>
       </div>

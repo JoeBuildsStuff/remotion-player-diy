@@ -1,7 +1,12 @@
 import { RotateCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -43,61 +48,58 @@ export function Inspector() {
   }
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-4 border-l border-zinc-800 bg-zinc-900 p-3">
+    <aside className="flex w-72 shrink-0 flex-col gap-4 border-l p-3">
       <section className="space-y-2">
-        <Label className="text-xs font-semibold text-zinc-100">Canvas</Label>
+        <Label className="">Canvas</Label>
         <div className="flex items-center gap-1.5">
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
-              W
-            </span>
-            <Input
+          <InputGroup className="flex-1">
+            <InputGroupAddon>
+              <InputGroupText>W</InputGroupText>
+            </InputGroupAddon>
+            <InputGroupInput
               value={width}
               onChange={(e) => setWidth(Number(e.target.value) || 0)}
-              className="h-8 border-zinc-700 bg-zinc-800 pl-6 text-xs text-zinc-100"
             />
-          </div>
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
-              H
-            </span>
-            <Input
+          </InputGroup>
+          <InputGroup className="flex-1">
+            <InputGroupAddon>
+              <InputGroupText>H</InputGroupText>
+            </InputGroupAddon>
+            <InputGroupInput
               value={height}
               onChange={(e) => setHeight(Number(e.target.value) || 0)}
-              className="h-8 border-zinc-700 bg-zinc-800 pl-6 text-xs text-zinc-100"
             />
-          </div>
+          </InputGroup>
           <Button
-            variant="outline"
-            size="icon"
+            variant="ghost"
             onClick={() => {
               setWidth(height)
               setHeight(width)
             }}
-            className="h-8 w-8 border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-zinc-50"
+            className="h-8 w-8"
           >
-            <RotateCw className="h-3.5 w-3.5" />
+            <RotateCw className="size-3" />
           </Button>
         </div>
       </section>
 
       <section className="space-y-1">
-        <Label className="text-xs font-semibold text-zinc-100">Duration</Label>
-        <p className="font-mono text-xs text-zinc-400">
+        <Label className="">Duration</Label>
+        <p className="font-mono text-xs text-muted-foreground">
           {formatDuration(durationInFrames, fps)}
         </p>
       </section>
 
       <section className="space-y-2">
-        <Label className="text-xs font-semibold text-zinc-100">Clips</Label>
+        <Label className="">Clips</Label>
         {clips.length === 0 ? (
-          <p className="text-xs text-zinc-500">No media yet.</p>
+          <p className="text-xs text-muted-foreground">No media yet.</p>
         ) : (
           <ul className="space-y-1">
             {clips.map((c) => (
               <li
                 key={c.id}
-                className="truncate rounded bg-zinc-800/60 px-2 py-1 text-xs text-zinc-300"
+                className="truncate rounded bg-secondary/40 px-2 py-1 text-xs text-foreground"
                 title={c.name}
               >
                 {c.name}
@@ -107,10 +109,10 @@ export function Inspector() {
         )}
       </section>
 
-      <section className="space-y-2">
-        <Label className="text-xs font-semibold text-zinc-100">Export</Label>
+      <section className="space-y-2 w-full">
+        <Label className="">Export</Label>
         <Select defaultValue="mp4">
-          <SelectTrigger className="h-8 border-zinc-700 bg-zinc-800 text-xs text-zinc-100">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -122,8 +124,9 @@ export function Inspector() {
         </Select>
         <Button
           disabled
-          size="sm"
-          className="h-8 w-full bg-zinc-800 text-xs text-zinc-500 hover:bg-zinc-800"
+          size="default"
+          variant="secondary"
+          className="w-full"
         >
           Render video
         </Button>

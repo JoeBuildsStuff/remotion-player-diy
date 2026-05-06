@@ -38,26 +38,26 @@ export function Timeline() {
   const tickCount = Math.max(1, Math.ceil(totalSeconds))
 
   return (
-    <div className="relative h-36 shrink-0 border-t border-zinc-800 bg-zinc-950">
+    <div className="relative h-36 shrink-0 border-t border-border bg-background">
       <div
         ref={trackAreaRef}
         onClick={handleSeek}
         className="relative h-full cursor-pointer overflow-x-auto overflow-y-hidden"
       >
         <div
-          className="relative h-full"
+          className="relative h-full min-w-full"
           style={{ width: Math.max(trackWidth, 1) }}
         >
           {/* Ruler */}
-          <div className="sticky top-0 h-5 border-b border-zinc-800 bg-zinc-900">
+          <div className="sticky top-0 h-5 border-b border-border bg-secondary/40">
             <div className="relative h-full">
               {Array.from({ length: tickCount + 1 }).map((_, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 h-full border-l border-zinc-800"
+                  className="absolute top-0 h-full border-l border-border"
                   style={{ left: i * PX_PER_SECOND }}
                 >
-                  <span className="ml-1 font-mono text-[10px] text-zinc-500">
+                  <span className="absolute left-1 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
                     {`00:${String(i).padStart(2, '0')}`}
                   </span>
                 </div>
@@ -70,7 +70,7 @@ export function Timeline() {
             {TRACKS.map((track) => (
               <div
                 key={track.index}
-                className="relative h-8 border-b border-zinc-800/60"
+                className="relative h-8 border-b border-border/60"
               >
                 {clips
                   .filter((c) => c.trackIndex === track.index)
