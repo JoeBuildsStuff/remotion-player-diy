@@ -1,6 +1,5 @@
 import { type PointerEvent as ReactPointerEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { RotateCw } from 'lucide-react'
 import { useCurrentScale } from 'remotion'
 
 import { Badge } from '@/components/ui/badge'
@@ -176,11 +175,7 @@ export function SelectionOutline({
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <RotateCw
-                aria-hidden="true"
-                style={{ width: handleSize * 0.62, height: handleSize * 0.62 }}
-                strokeWidth={3}
-              />
+
             </span>
           </button>
 
@@ -215,7 +210,7 @@ export function SelectionOutline({
           <Badge
             aria-hidden="true"
             variant="outline"
-            className="absolute bg-background text-foreground shadow-sm"
+            className="absolute bg-editor-selection! text-foreground shadow-sm pointer-events-none -translate-x-1/2"
             style={{
               left: '50%',
               bottom: -30 / scale,
@@ -223,8 +218,6 @@ export function SelectionOutline({
               padding: `0 ${8 / scale}px`,
               fontSize: 10 / scale,
               lineHeight: 1,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
             }}
           >
             {Math.round(clip.width)} x {Math.round(clip.height)}

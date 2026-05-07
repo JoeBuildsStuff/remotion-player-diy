@@ -2,7 +2,6 @@ import type { Clip } from '../model/editor-types'
 import { clamp } from '../model/time'
 
 export const BASE_PX_PER_SECOND = 60
-export const TRACK_HEADER_WIDTH = 154
 export const RULER_HEIGHT = 24
 export const TRACK_HEIGHT = 44
 export const MIN_CLIP_FRAMES = 1

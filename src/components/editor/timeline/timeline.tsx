@@ -15,7 +15,6 @@ import {
   BASE_PX_PER_SECOND,
   MIN_CLIP_FRAMES,
   RULER_HEIGHT,
-  TRACK_HEADER_WIDTH,
   TRACK_HEIGHT,
   clipIdFromDndId,
   clipSourceEnd,
@@ -74,7 +73,7 @@ export function Timeline() {
     const el = trackAreaRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const x = e.clientX - rect.left - TRACK_HEADER_WIDTH + el.scrollLeft
+    const x = e.clientX - rect.left + el.scrollLeft
     const seconds = Math.max(0, x / pxPerSecond)
     const frame = Math.min(
       durationInFrames - 1,
@@ -208,7 +207,7 @@ export function Timeline() {
 
   return (
     <div
-      className="relative shrink-0 border-t border-border bg-background"
+      className="flex shrink-0 border-t border-border bg-background"
       style={{ height: Math.max(minTimelineHeight, timelineHeight) }}
     >
       <TimelineTrackHeaders
@@ -228,8 +227,7 @@ export function Timeline() {
         <div
           ref={trackAreaRef}
           onClick={handleSeek}
-          className="relative h-full cursor-pointer overflow-x-auto overflow-y-hidden"
-          style={{ paddingLeft: TRACK_HEADER_WIDTH }}
+          className="relative h-full flex-1 cursor-pointer overflow-x-auto overflow-y-hidden"
         >
           <div
             className="relative h-full min-w-full"

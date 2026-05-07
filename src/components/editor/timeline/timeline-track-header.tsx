@@ -9,7 +9,6 @@ import {
 import type { Clip } from '../model/editor-types'
 import {
   RULER_HEIGHT,
-  TRACK_HEADER_WIDTH,
   TRACK_HEIGHT,
   type TimelineTrackModel,
 } from './timeline-geometry'
@@ -28,10 +27,7 @@ export function TimelineTrackHeaders({
   onDeleteTrack: (trackIndex: number) => void
 }) {
   return (
-    <div
-      className="absolute left-0 top-0 z-20 border-r border-border bg-background"
-      style={{ width: TRACK_HEADER_WIDTH }}
-    >
+    <div className="w-fit shrink-0 self-start border-r border-border bg-background">
       <div
         className="border-b border-border bg-secondary/40"
         style={{ height: RULER_HEIGHT }}
@@ -53,7 +49,7 @@ export function TimelineTrackHeaders({
         return (
           <div
             key={track.index}
-            className="grid grid-cols-[2rem_1.75rem_1.75rem_1.75rem] items-center gap-1 border-b border-border/60 px-2 text-muted-foreground"
+            className="grid grid-cols-[2rem_1.75rem_1.75rem_1.75rem] items-center border-b border-border/60 px-2 text-muted-foreground"
             style={{ height: TRACK_HEIGHT }}
           >
             <span className="text-center font-mono text-xs tabular-nums">
