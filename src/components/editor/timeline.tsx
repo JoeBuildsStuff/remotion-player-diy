@@ -477,7 +477,9 @@ export function Timeline() {
                           ? 'bg-editor-selection-fill border-editor-selection-border'
                           : clip.type === 'audio'
                             ? 'bg-secondary border-border'
-                            : 'bg-muted border-border'
+                            : clip.type === 'text'
+                              ? 'bg-primary/15 border-primary/40'
+                              : 'bg-muted border-border'
                       const isSelected = selectedClipId === clip.id
                       const isHidden = clip.visible === false
                       return (

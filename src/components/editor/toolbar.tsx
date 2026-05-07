@@ -28,6 +28,7 @@ import { useEditor } from './editor-context'
 export function Toolbar() {
   const {
     addFiles,
+    addTextClip,
     previewZoom,
     resetPreviewZoom,
     zoomPreviewIn,
@@ -83,6 +84,7 @@ export function Toolbar() {
                 variant="outline"
                 size="icon"
                 aria-label="Text"
+                onClick={addTextClip}
                 className="h-7 w-7"
               >
                 <Type className="h-4 w-4" />

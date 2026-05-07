@@ -621,6 +621,52 @@ function mediaContainerStyle(clip: Clip, opacity: number): CSSProperties {
   }
 }
 
+function textContainerStyle(clip: Clip, opacity: number): CSSProperties {
+  return {
+    position: 'absolute',
+    left: clip.x,
+    top: clip.y,
+    width: clip.width,
+    height: clip.height,
+    opacity,
+    transform: `rotate(${clip.rotation}deg)`,
+    transformOrigin: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent:
+      clip.textAlign === 'left'
+        ? 'flex-start'
+        : clip.textAlign === 'right'
+          ? 'flex-end'
+          : 'center',
+    paddingInline: clip.backgroundPaddingX ?? 0,
+    borderRadius: clip.backgroundBorderRadius ?? 0,
+    backgroundColor: clip.backgroundColor ?? 'transparent',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+  }
+}
+
+function textStyle(clip: Clip): CSSProperties {
+  return {
+    width: '100%',
+    color: clip.textColor ?? '#ffffff',
+    fontFamily: clip.fontFamily ?? 'Inter',
+    fontSize: clip.fontSize ?? 80,
+    fontWeight: clip.fontWeight ?? 700,
+    lineHeight: clip.lineHeight ?? 1.2,
+    letterSpacing: clip.letterSpacing ?? 0,
+    textAlign: clip.textAlign ?? 'center',
+    direction: clip.textDirection ?? 'ltr',
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'break-word',
+    WebkitTextStroke:
+      (clip.strokeWidth ?? 0) > 0
+        ? `${clip.strokeWidth}px ${clip.strokeColor ?? '#000000'}`
+        : undefined,
+  }
+}
+
 function croppedMediaStyle(clip: Clip): CSSProperties {
   return {
     position: 'absolute',
@@ -671,6 +717,14 @@ function ClipRenderer({ clip }: { clip: Clip }) {
     return (
       <div style={mediaContainerStyle(clip, clip.opacity * visualFade)}>
         <Img src={clip.src} style={croppedMediaStyle(clip)} />
+      </div>
+    )
+  }
+
+  if (clip.type === 'text') {
+    return (
+      <div style={textContainerStyle(clip, clip.opacity * visualFade)}>
+        <div style={textStyle(clip)}>{clip.text ?? 'Text'}</div>
       </div>
     )
   }

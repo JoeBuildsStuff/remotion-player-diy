@@ -1,4 +1,4 @@
-export type ClipType = 'video' | 'audio' | 'image'
+export type ClipType = 'video' | 'audio' | 'image' | 'text'
 
 export type Clip = {
   id: string
@@ -30,4 +30,18 @@ export type Clip = {
   videoFadeOutFrames: number
   audioFadeInFrames: number
   audioFadeOutFrames: number
+  text?: string
+  fontFamily?: string
+  fontWeight?: string
+  fontSize?: number
+  lineHeight?: number
+  letterSpacing?: number
+  textAlign?: 'left' | 'center' | 'right'
+  textDirection?: 'ltr' | 'rtl'
+  textColor?: string
+  strokeColor?: string
+  strokeWidth?: number
+  backgroundColor?: string
+  backgroundPaddingX?: number
+  backgroundBorderRadius?: number
 }

@@ -1,4 +1,6 @@
 import {
+  type Dispatch,
+  type SetStateAction,
   useMemo,
   useState,
 } from 'react'
@@ -24,9 +26,11 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 import { useEditor } from './editor-context'
@@ -312,6 +316,25 @@ export function ClipInspector({ clip }: Props) {
           clip.sourceDurationInFrames,
         )
     updateClip(clip.id, { trimAfterFrames: nextTrimAfter })
+  }
+
+  if (clip.type === 'text') {
+    return (
+      <TextClipInspector
+        clip={clip}
+        horizontalAlignment={horizontalAlignment}
+        verticalAlignment={verticalAlignment}
+        alignHorizontally={alignHorizontally}
+        alignVertically={alignVertically}
+        handleWidthChange={handleWidthChange}
+        handleHeightChange={handleHeightChange}
+        lockAspectRatio={lockAspectRatio}
+        setLockAspectRatio={setLockAspectRatio}
+        toNumber={toNumber}
+        framesToSeconds={framesToSeconds}
+        secondsToFrames={secondsToFrames}
+      />
+    )
   }
 
   return (
@@ -791,6 +814,495 @@ function Section({
       </AccordionTrigger>
       <AccordionContent className="min-w-0 px-1">{children}</AccordionContent>
     </AccordionItem>
+  )
+}
+
+function ColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const normalizedValue = /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <input
+        type="color"
+        aria-label={label}
+        value={normalizedValue}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 w-16 rounded-md border border-input bg-input/20 p-1"
+      />
+    </div>
+  )
+}
+
+function TextClipInspector({
+  clip,
+  horizontalAlignment,
+  verticalAlignment,
+  alignHorizontally,
+  alignVertically,
+  handleWidthChange,
+  handleHeightChange,
+  lockAspectRatio,
+  setLockAspectRatio,
+  toNumber,
+  framesToSeconds,
+  secondsToFrames,
+}: {
+  clip: Clip
+  horizontalAlignment: string | undefined
+  verticalAlignment: string | undefined
+  alignHorizontally: (value: string) => void
+  alignVertically: (value: string) => void
+  handleWidthChange: (value: string) => void
+  handleHeightChange: (value: string) => void
+  lockAspectRatio: boolean
+  setLockAspectRatio: Dispatch<SetStateAction<boolean>>
+  toNumber: (value: string) => number | null
+  framesToSeconds: (frames: number) => number
+  secondsToFrames: (seconds: number) => number
+}) {
+  const { updateClip } = useEditor()
+  const fontSize = clip.fontSize ?? 80
+  const lineHeight = clip.lineHeight ?? 1.2
+  const letterSpacing = clip.letterSpacing ?? 0
+  const textAlign = clip.textAlign ?? 'center'
+  const textDirection = clip.textDirection ?? 'ltr'
+  const strokeWidth = clip.strokeWidth ?? 0
+  const backgroundPaddingX = clip.backgroundPaddingX ?? 40
+  const backgroundBorderRadius = clip.backgroundBorderRadius ?? 20
+
+  return (
+    <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-l">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+        <Accordion
+          type="multiple"
+          defaultValue={['layout', 'typography', 'fill', 'stroke', 'background', 'fade']}
+          className="min-w-0 rounded-none border-0"
+        >
+          <Section value="layout" title="Layout">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Alignment</Label>
+                <div className="flex gap-1.5">
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={horizontalAlignment ?? ''}
+                    onValueChange={alignHorizontally}
+                    className="flex-1"
+                  >
+                    <ToggleGroupItem value="left" className="flex-1">
+                      <AlignStartVertical className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="center-h" className="flex-1">
+                      <AlignCenterVertical className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="right" className="flex-1">
+                      <AlignEndVertical className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={verticalAlignment ?? ''}
+                    onValueChange={alignVertically}
+                    className="flex-1"
+                  >
+                    <ToggleGroupItem value="top" className="flex-1">
+                      <AlignStartHorizontal className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="center-v" className="flex-1">
+                      <AlignCenterHorizontal className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="bottom" className="flex-1">
+                      <AlignEndHorizontal className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Position</Label>
+                <div className="flex gap-1.5">
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>X</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      value={String(clip.x)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, { x: n })
+                      }}
+                    />
+                  </InputGroup>
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>Y</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      value={String(clip.y)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, { y: n })
+                      }}
+                    />
+                  </InputGroup>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Dimensions</Label>
+                <div className="flex items-center gap-1.5">
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>W</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={1}
+                      value={String(clip.width)}
+                      onChange={(e) => handleWidthChange(e.target.value)}
+                    />
+                  </InputGroup>
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <InputGroupText>H</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={1}
+                      value={String(clip.height)}
+                      onChange={(e) => handleHeightChange(e.target.value)}
+                    />
+                  </InputGroup>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    aria-pressed={lockAspectRatio}
+                    onClick={() => setLockAspectRatio((prev) => !prev)}
+                  >
+                    <Link2
+                      className={`h-3.5 w-3.5 ${
+                        lockAspectRatio ? 'text-foreground' : 'text-muted-foreground'
+                      }`}
+                    />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Rotation</Label>
+                <div className="flex items-center gap-1.5">
+                  <InputGroup className="flex-1">
+                    <InputGroupAddon>
+                      <DraftingCompass className="h-3 w-3 text-muted-foreground" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      value={String(clip.rotation)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, { rotation: n })
+                      }}
+                    />
+                  </InputGroup>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() =>
+                      updateClip(clip.id, {
+                        rotation: (clip.rotation + 90) % 360,
+                      })
+                    }
+                  >
+                    <RotateCw className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section value="typography" title="Typography">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Font</Label>
+                <NativeSelect
+                  className="w-full"
+                  value={clip.fontFamily ?? 'Inter'}
+                  onChange={(e) => updateClip(clip.id, { fontFamily: e.target.value })}
+                >
+                  <NativeSelectOption value="Inter">Inter</NativeSelectOption>
+                  <NativeSelectOption value="Arial">Arial</NativeSelectOption>
+                  <NativeSelectOption value="Georgia">Georgia</NativeSelectOption>
+                  <NativeSelectOption value="Impact">Impact</NativeSelectOption>
+                  <NativeSelectOption value="Times New Roman">Times New Roman</NativeSelectOption>
+                </NativeSelect>
+                <NativeSelect
+                  className="w-full"
+                  value={clip.fontWeight ?? '700'}
+                  onChange={(e) => updateClip(clip.id, { fontWeight: e.target.value })}
+                >
+                  <NativeSelectOption value="400">Regular</NativeSelectOption>
+                  <NativeSelectOption value="500">Medium</NativeSelectOption>
+                  <NativeSelectOption value="600">Semibold</NativeSelectOption>
+                  <NativeSelectOption value="700">Bold</NativeSelectOption>
+                  <NativeSelectOption value="800">Extra Bold</NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Font Size</Label>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <InputGroupText>Tt</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    min={1}
+                    value={String(fontSize)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, { fontSize: Math.max(1, n) })
+                    }}
+                  />
+                </InputGroup>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Line Height</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <InputGroupText>LH</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={0.5}
+                      step={0.05}
+                      value={String(lineHeight)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, { lineHeight: Math.max(0.5, n) })
+                      }}
+                    />
+                  </InputGroup>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Letter Spacing</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <InputGroupText>LS</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      value={String(letterSpacing)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, { letterSpacing: n })
+                      }}
+                    />
+                  </InputGroup>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Text</Label>
+                <Textarea
+                  value={clip.text ?? ''}
+                  onChange={(e) =>
+                    updateClip(clip.id, {
+                      text: e.target.value,
+                      name: e.target.value.trim() || 'Text',
+                    })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Alignment</Label>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={textAlign}
+                    onValueChange={(value) => {
+                      if (!value) return
+                      updateClip(clip.id, {
+                        textAlign: value as Clip['textAlign'],
+                      })
+                    }}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="left" className="flex-1">L</ToggleGroupItem>
+                    <ToggleGroupItem value="center" className="flex-1">C</ToggleGroupItem>
+                    <ToggleGroupItem value="right" className="flex-1">R</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Direction</Label>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={textDirection}
+                    onValueChange={(value) => {
+                      if (!value) return
+                      updateClip(clip.id, {
+                        textDirection: value as Clip['textDirection'],
+                      })
+                    }}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="ltr" className="flex-1">LTR</ToggleGroupItem>
+                    <ToggleGroupItem value="rtl" className="flex-1">RTL</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section value="fill" title="Fill">
+            <div className="space-y-3">
+              <SliderRow
+                label="Opacity"
+                value={Math.round(clip.opacity * 100)}
+                suffix="%"
+                max={100}
+                onChange={(v) => updateClip(clip.id, { opacity: v / 100 })}
+              />
+              <ColorInput
+                label="Color"
+                value={clip.textColor ?? '#ffffff'}
+                onChange={(textColor) => updateClip(clip.id, { textColor })}
+              />
+            </div>
+          </Section>
+
+          <Section value="stroke" title="Stroke">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Width</Label>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <DraftingCompass className="h-3 w-3 text-muted-foreground" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    min={0}
+                    value={String(strokeWidth)}
+                    onChange={(e) => {
+                      const n = toNumber(e.target.value)
+                      if (n == null) return
+                      updateClip(clip.id, { strokeWidth: Math.max(0, n) })
+                    }}
+                  />
+                </InputGroup>
+              </div>
+              <ColorInput
+                label="Color"
+                value={clip.strokeColor ?? '#000000'}
+                onChange={(strokeColor) => updateClip(clip.id, { strokeColor })}
+              />
+            </div>
+          </Section>
+
+          <Section value="background" title="Background">
+            <div className="space-y-3">
+              <ColorInput
+                label="Color"
+                value={clip.backgroundColor ?? '#000000'}
+                onChange={(backgroundColor) => updateClip(clip.id, { backgroundColor })}
+              />
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Corner Radius</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <Squircle className="h-3 w-3 text-muted-foreground" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={0}
+                      value={String(backgroundBorderRadius)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, {
+                          backgroundBorderRadius: Math.max(0, n),
+                        })
+                      }}
+                    />
+                  </InputGroup>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Horizontal Padding</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <InputGroupText>||</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="number"
+                      min={0}
+                      value={String(backgroundPaddingX)}
+                      onChange={(e) => {
+                        const n = toNumber(e.target.value)
+                        if (n == null) return
+                        updateClip(clip.id, {
+                          backgroundPaddingX: Math.max(0, n),
+                        })
+                      }}
+                    />
+                  </InputGroup>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section value="fade" title="Fade" last>
+            <div className="space-y-3">
+              <SliderRow
+                label="Fade In"
+                value={framesToSeconds(clip.videoFadeInFrames)}
+                max={5}
+                step={0.1}
+                format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { videoFadeInFrames: secondsToFrames(v) })
+                }
+              />
+              <SliderRow
+                label="Fade Out"
+                value={framesToSeconds(clip.videoFadeOutFrames)}
+                max={5}
+                step={0.1}
+                format={(v) => `${v.toFixed(1)}s`}
+                onChange={(v) =>
+                  updateClip(clip.id, { videoFadeOutFrames: secondsToFrames(v) })
+                }
+              />
+            </div>
+          </Section>
+        </Accordion>
+      </ScrollArea>
+    </aside>
   )
 }
 

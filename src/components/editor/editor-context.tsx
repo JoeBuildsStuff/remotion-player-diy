@@ -39,6 +39,7 @@ type EditorState = {
   zoomPreviewOut: () => void
   resetPreviewZoom: () => void
   addFiles: (files: FileList | File[]) => Promise<void>
+  addTextClip: () => void
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void
   splitClip: (id: string, frame: number) => void
@@ -52,6 +53,7 @@ const EditorContext = createContext<EditorState | null>(null)
 
 const FPS = 30
 const IMAGE_DEFAULT_SECONDS = 5
+const TEXT_DEFAULT_SECONDS = 5
 const MIN_TIMELINE_ZOOM = 0.5
 const MAX_TIMELINE_ZOOM = 4
 const TIMELINE_ZOOM_STEP = 0.25
@@ -63,6 +65,13 @@ type MediaMetadata = {
   durationInSeconds: number
   width: number | null
   height: number | null
+}
+
+type ImportedMedia = {
+  file: File
+  type: ClipType
+  src: string
+  metadata: MediaMetadata
 }
 
 function fileTypeOf(file: File): ClipType | null {
@@ -184,65 +193,143 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, [clips])
 
   const addFiles = useCallback(async (files: FileList | File[]) => {
-    const list = Array.from(files)
-    const additions: Clip[] = []
-    for (const file of list) {
+    const imports: ImportedMedia[] = []
+
+    for (const file of Array.from(files)) {
       const type = fileTypeOf(file)
       if (!type) continue
+
       const src = URL.createObjectURL(file)
-      const metadata = await probeMediaMetadata(src, type)
-      const layout = fitWithinCanvas(
-        metadata.width,
-        metadata.height,
-        width,
-        height,
-      )
-      const pendingClips = additions.concat(clips)
-      const trackIndex = trackFor(type, pendingClips)
-      // Append after the last clip on that track.
-      const lastEnd = pendingClips
-        .filter((c) => c.trackIndex === trackIndex)
-        .reduce((m, c) => Math.max(m, c.startFrame + c.durationInFrames), 0)
-      additions.push({
-        id: crypto.randomUUID(),
+      imports.push({
+        file,
         type,
         src,
-        name: file.name,
-        sourceDurationInFrames: Math.max(
-          1,
-          Math.round(metadata.durationInSeconds * FPS),
-        ),
-        startFrame: lastEnd,
-        durationInFrames: Math.max(
-          1,
-          Math.round(metadata.durationInSeconds * FPS),
-        ),
-        trimBeforeFrames: 0,
-        trimAfterFrames: null,
-        trackIndex,
-        x: layout.x,
-        y: layout.y,
-        width: layout.width,
-        height: layout.height,
-        rotation: 0,
-        opacity: 1,
-        borderRadius: 0,
-        cropLeft: 0,
-        cropTop: 0,
-        cropRight: 0,
-        cropBottom: 0,
-        playbackRate: 1,
-        volumeDb: 0,
-        muted: false,
-        visible: true,
-        videoFadeInFrames: 0,
-        videoFadeOutFrames: 0,
-        audioFadeInFrames: 0,
-        audioFadeOutFrames: 0,
+        metadata: await probeMediaMetadata(src, type),
       })
     }
-    if (additions.length) setClips((prev) => [...prev, ...additions])
-  }, [clips, height, width])
+
+    if (imports.length === 0) return
+
+    setClips((prev) => {
+      const next = prev.slice()
+
+      for (const item of imports) {
+        const { file, metadata, src, type } = item
+        const layout = fitWithinCanvas(
+          metadata.width,
+          metadata.height,
+          width,
+          height,
+        )
+        const trackIndex = trackFor(type, next)
+        // Append after the last clip on that track using the latest timeline.
+        const lastEnd = next
+          .filter((c) => c.trackIndex === trackIndex)
+          .reduce((m, c) => Math.max(m, c.startFrame + c.durationInFrames), 0)
+        const durationInFrames = Math.max(
+          1,
+          Math.round(metadata.durationInSeconds * FPS),
+        )
+
+        next.push({
+          id: crypto.randomUUID(),
+          type,
+          src,
+          name: file.name,
+          sourceDurationInFrames: durationInFrames,
+          startFrame: lastEnd,
+          durationInFrames,
+          trimBeforeFrames: 0,
+          trimAfterFrames: null,
+          trackIndex,
+          x: layout.x,
+          y: layout.y,
+          width: layout.width,
+          height: layout.height,
+          rotation: 0,
+          opacity: 1,
+          borderRadius: 0,
+          cropLeft: 0,
+          cropTop: 0,
+          cropRight: 0,
+          cropBottom: 0,
+          playbackRate: 1,
+          volumeDb: 0,
+          muted: false,
+          visible: true,
+          videoFadeInFrames: 0,
+          videoFadeOutFrames: 0,
+          audioFadeInFrames: 0,
+          audioFadeOutFrames: 0,
+        })
+      }
+
+      return next
+    })
+  }, [height, width])
+
+  const addTextClip = useCallback(() => {
+    const clipWidth = Math.min(520, Math.round(width * 0.72))
+    const clipHeight = 120
+    const id = crypto.randomUUID()
+
+    setClips((prev) => {
+      const trackIndex = trackFor('text', prev)
+      const lastEnd = prev
+        .filter((c) => c.trackIndex === trackIndex)
+        .reduce((m, c) => Math.max(m, c.startFrame + c.durationInFrames), 0)
+
+      return [
+        ...prev,
+        {
+          id,
+          type: 'text',
+          src: '',
+          name: 'Text',
+          sourceDurationInFrames: FPS * 60 * 60,
+          startFrame: lastEnd,
+          durationInFrames: TEXT_DEFAULT_SECONDS * FPS,
+          trimBeforeFrames: 0,
+          trimAfterFrames: null,
+          trackIndex,
+          x: Math.round((width - clipWidth) / 2),
+          y: Math.round((height - clipHeight) / 2),
+          width: clipWidth,
+          height: clipHeight,
+          rotation: 0,
+          opacity: 1,
+          borderRadius: 0,
+          cropLeft: 0,
+          cropTop: 0,
+          cropRight: 0,
+          cropBottom: 0,
+          playbackRate: 1,
+          volumeDb: 0,
+          muted: false,
+          visible: true,
+          videoFadeInFrames: 0,
+          videoFadeOutFrames: 0,
+          audioFadeInFrames: 0,
+          audioFadeOutFrames: 0,
+          text: 'Text',
+          fontFamily: 'Inter',
+          fontWeight: '700',
+          fontSize: 80,
+          lineHeight: 1.2,
+          letterSpacing: 0,
+          textAlign: 'center',
+          textDirection: 'ltr',
+          textColor: '#ffffff',
+          strokeColor: '#000000',
+          strokeWidth: 0,
+          backgroundColor: '#000000',
+          backgroundPaddingX: 40,
+          backgroundBorderRadius: 20,
+        },
+      ]
+    })
+    setSelectedClipId(id)
+  }, [height, width])
 
   const updateClip = useCallback((id: string, patch: Partial<Clip>) => {
     setClips((prev) =>
@@ -343,43 +430,75 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setPreviewZoom(1)
   }, [])
 
-  const value: EditorState = {
-    fps: FPS,
-    width,
-    height,
-    volume,
-    clips,
-    durationInFrames,
-    currentFrame,
-    isPlaying,
-    isLooping,
-    timelineZoom,
-    previewZoom,
-    playerRef,
-    selectedClipId,
-    setSelectedClipId,
-    setVolume,
-    setWidth,
-    setHeight,
-    setCurrentFrame,
-    setIsPlaying,
-    setIsLooping,
-    setTimelineZoom: updateTimelineZoom,
-    zoomTimelineIn,
-    zoomTimelineOut,
-    resetTimelineZoom,
-    zoomPreviewIn,
-    zoomPreviewOut,
-    resetPreviewZoom,
-    addFiles,
-    updateClip,
-    removeClip,
-    splitClip,
-    seekTo,
-    play,
-    pause,
-    togglePlay,
-  }
+  const value: EditorState = useMemo(
+    () => ({
+      fps: FPS,
+      width,
+      height,
+      volume,
+      clips,
+      durationInFrames,
+      currentFrame,
+      isPlaying,
+      isLooping,
+      timelineZoom,
+      previewZoom,
+      playerRef,
+      selectedClipId,
+      setSelectedClipId,
+      setVolume,
+      setWidth,
+      setHeight,
+      setCurrentFrame,
+      setIsPlaying,
+      setIsLooping,
+      setTimelineZoom: updateTimelineZoom,
+      zoomTimelineIn,
+      zoomTimelineOut,
+      resetTimelineZoom,
+      zoomPreviewIn,
+      zoomPreviewOut,
+      resetPreviewZoom,
+      addFiles,
+      addTextClip,
+      updateClip,
+      removeClip,
+      splitClip,
+      seekTo,
+      play,
+      pause,
+      togglePlay,
+    }),
+    [
+      addFiles,
+      addTextClip,
+      clips,
+      currentFrame,
+      durationInFrames,
+      height,
+      isLooping,
+      isPlaying,
+      pause,
+      play,
+      previewZoom,
+      removeClip,
+      resetPreviewZoom,
+      resetTimelineZoom,
+      seekTo,
+      selectedClipId,
+      splitClip,
+      timelineZoom,
+      togglePlay,
+      updateClip,
+      updateTimelineZoom,
+      volume,
+      width,
+      zoomPreviewIn,
+      zoomPreviewOut,
+      zoomTimelineIn,
+      zoomTimelineOut,
+    ],
+  )
 
   return (
     <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
