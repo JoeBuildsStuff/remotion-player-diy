@@ -10,10 +10,7 @@ function unauthorized() {
   return new Response('Unauthorized', { status: 401 })
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
+export async function POST(request: Request): Promise<Response> {
   if (!SHARED_SECRET) {
     return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
       status: 500,
