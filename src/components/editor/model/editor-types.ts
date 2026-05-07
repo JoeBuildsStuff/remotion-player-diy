@@ -1,9 +1,16 @@
 export type ClipType = 'video' | 'audio' | 'image' | 'text'
 
+export type UploadStatus = 'idle' | 'uploading' | 'ready' | 'error'
+
 export type Clip = {
   id: string
   type: ClipType
   src: string
+  /** Public https URL of the source media on Vercel Blob. Required for server-side rendering. */
+  remoteSrc?: string
+  /** Upload state for the source media. 'idle' for text clips (no upload needed). */
+  uploadStatus?: UploadStatus
+  uploadError?: string
   name: string
   sourceDurationInFrames: number
   startFrame: number

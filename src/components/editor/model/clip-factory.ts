@@ -41,6 +41,7 @@ export function createMediaClip(
     id: crypto.randomUUID(),
     type,
     src,
+    uploadStatus: 'idle',
     name: file.name,
     sourceDurationInFrames: durationInFrames,
     startFrame: lastEndForTrack(clips, trackIndex),
