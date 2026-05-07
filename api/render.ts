@@ -7,10 +7,10 @@ import {
 import { waitUntil } from '@vercel/functions'
 import { z } from 'zod'
 
-import { COMP_NAME } from '../remotion/constants'
-import { ClipSchema } from '../remotion/schema'
-import { bundleRemotionProject, formatSSE, type RenderProgress } from './_render-helpers'
-import { restoreSnapshot } from './_restore-snapshot'
+import { COMP_NAME } from '../remotion/constants.js'
+import { ClipSchema } from '../remotion/schema.js'
+import { bundleRemotionProject, formatSSE, type RenderProgress } from './_render-helpers.js'
+import { restoreSnapshot } from './_restore-snapshot.js'
 
 const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
 
@@ -30,10 +30,7 @@ function unauthorized() {
   return new Response('Unauthorized', { status: 401 })
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
+export async function POST(request: Request): Promise<Response> {
   if (!SHARED_SECRET) {
     return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
       status: 500,
