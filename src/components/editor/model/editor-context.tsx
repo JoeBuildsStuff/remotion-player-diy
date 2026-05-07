@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { PlayerRef } from '@remotion/player'
 
+import { uploadSourceFile } from '@/lib/upload-client'
+
 import { createMediaClip, createTextClip } from './clip-factory'
 import {
   FPS,
@@ -38,15 +40,46 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     const imports = await importMediaFiles(files)
     if (imports.length === 0) return
 
+    // Build new clips synchronously so the editor sees them immediately,
+    // playing from the local blob URL while the Blob upload runs in the
+    // background. Each upload patches its clip with `remoteSrc` on success.
+    const newClips: Array<{ clip: Clip; file: File }> = []
+
     setClips((prev) => {
       const next = prev.slice()
 
       for (const item of imports) {
-        next.push(createMediaClip(item, next, width, height))
+        const clip: Clip = {
+          ...createMediaClip(item, next, width, height),
+          uploadStatus: 'uploading',
+        }
+        next.push(clip)
+        newClips.push({ clip, file: item.file })
       }
 
       return next
     })
+
+    const patch = (id: string, p: Partial<Clip>) => {
+      setClips((prev) =>
+        prev.map((clip) => (clip.id === id ? { ...clip, ...p } : clip)),
+      )
+    }
+
+    // Fire uploads in parallel. Failures are recorded on the clip; we don't
+    // throw because that would tear down the whole import batch.
+    for (const { clip, file } of newClips) {
+      uploadSourceFile(file)
+        .then((result) => {
+          patch(clip.id, { remoteSrc: result.url, uploadStatus: 'ready' })
+        })
+        .catch((err: unknown) => {
+          patch(clip.id, {
+            uploadStatus: 'error',
+            uploadError: err instanceof Error ? err.message : String(err),
+          })
+        })
+    }
   }, [height, width])
 
   const addTextClip = useCallback(() => {
