@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Player } from '@remotion/player'
 
-import { VideoComposition } from './composition'
-import { useEditor } from './editor-context'
+import { VideoComposition } from '../composition/video-composition'
+import { useEditor } from '../model/editor-context-value'
+import { usePreviewPlayerEvents, usePreviewVolume } from './preview-player-events'
 
 export function Preview() {
   const {
@@ -47,26 +48,13 @@ export function Preview() {
     return () => observer.disconnect()
   }, [height, width])
 
-  useEffect(() => {
-    const p = playerRef.current
-    if (!p) return
-    const onFrame = (e: { detail: { frame: number } }) =>
-      setCurrentFrame(e.detail.frame)
-    const onPlay = () => setIsPlaying(true)
-    const onPause = () => setIsPlaying(false)
-    p.addEventListener('frameupdate', onFrame)
-    p.addEventListener('play', onPlay)
-    p.addEventListener('pause', onPause)
-    return () => {
-      p.removeEventListener('frameupdate', onFrame)
-      p.removeEventListener('play', onPlay)
-      p.removeEventListener('pause', onPause)
-    }
-  }, [playerRef, setCurrentFrame, setIsPlaying, clips.length])
-
-  useEffect(() => {
-    playerRef.current?.setVolume(volume)
-  }, [playerRef, volume, clips.length])
+  usePreviewPlayerEvents({
+    clipsLength: clips.length,
+    playerRef,
+    setCurrentFrame,
+    setIsPlaying,
+  })
+  usePreviewVolume({ clipsLength: clips.length, playerRef, volume })
 
   return (
     <div

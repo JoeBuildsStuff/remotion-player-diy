@@ -23,7 +23,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-import { useEditor } from './editor-context'
+import { useEditor } from '../model/editor-context-value'
 import { ProjectInfoButton } from './project-info-button'
 
 export function Toolbar() {

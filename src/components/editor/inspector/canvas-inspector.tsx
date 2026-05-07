@@ -1,5 +1,10 @@
-import { RectangleHorizontal, RectangleVertical, RotateCw, Square } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import {
+  RectangleHorizontal,
+  RectangleVertical,
+  RotateCw,
+  Square,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -19,9 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-import { ClipInspector } from './clip-inspector'
-import { useEditor } from './editor-context'
+import type { Clip } from '../model/editor-types'
 
 function formatDuration(frames: number, fps: number) {
   const totalSeconds = frames / fps
@@ -35,147 +38,28 @@ const CANVAS_SIZE_PRESETS = [
   {
     label: 'Social',
     options: [
-      {
-        id: 'youtube',
-        name: 'YouTube',
-        size: '1920 x 1080',
-        ratio: '16:9',
-        width: 1920,
-        height: 1080,
-      },
-      {
-        id: 'youtube-shorts',
-        name: 'YouTube Shorts',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'tiktok',
-        name: 'TikTok',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'instagram-story-reels',
-        name: 'Instagram Story & Reels',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'instagram-square',
-        name: 'Instagram Post Square',
-        size: '1080 x 1080',
-        ratio: '1:1',
-        width: 1080,
-        height: 1080,
-      },
-      {
-        id: 'instagram-post',
-        name: 'Instagram Post',
-        size: '1080 x 1350',
-        ratio: '4:5',
-        width: 1080,
-        height: 1350,
-      },
-      {
-        id: 'spotify-canvas',
-        name: 'Spotify Canvas',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'facebook-story',
-        name: 'Facebook Story',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'snapchat-story',
-        name: 'Snapchat Story',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
+      { id: 'youtube', name: 'YouTube', size: '1920 x 1080', ratio: '16:9', width: 1920, height: 1080 },
+      { id: 'youtube-shorts', name: 'YouTube Shorts', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'tiktok', name: 'TikTok', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'instagram-story-reels', name: 'Instagram Story & Reels', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'instagram-square', name: 'Instagram Post Square', size: '1080 x 1080', ratio: '1:1', width: 1080, height: 1080 },
+      { id: 'instagram-post', name: 'Instagram Post', size: '1080 x 1350', ratio: '4:5', width: 1080, height: 1350 },
+      { id: 'spotify-canvas', name: 'Spotify Canvas', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'facebook-story', name: 'Facebook Story', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'snapchat-story', name: 'Snapchat Story', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
     ],
   },
   {
     label: 'Common',
     options: [
-      {
-        id: 'widescreen',
-        name: 'Widescreen',
-        size: '1920 x 1080',
-        ratio: '16:9',
-        width: 1920,
-        height: 1080,
-      },
-      {
-        id: 'full-portrait',
-        name: 'Full Portrait',
-        size: '1080 x 1920',
-        ratio: '9:16',
-        width: 1080,
-        height: 1920,
-      },
-      {
-        id: 'square',
-        name: 'Square',
-        size: '1080 x 1080',
-        ratio: '1:1',
-        width: 1080,
-        height: 1080,
-      },
-      {
-        id: 'landscape',
-        name: 'Landscape',
-        size: '1440 x 1080',
-        ratio: '4:3',
-        width: 1440,
-        height: 1080,
-      },
-      {
-        id: 'portrait',
-        name: 'Portrait',
-        size: '1080 x 1350',
-        ratio: '4:5',
-        width: 1080,
-        height: 1350,
-      },
-      {
-        id: 'landscape-post',
-        name: 'Landscape Post',
-        size: '1350 x 1080',
-        ratio: '5:4',
-        width: 1350,
-        height: 1080,
-      },
-      {
-        id: 'vertical',
-        name: 'Vertical',
-        size: '1080 x 1620',
-        ratio: '2:3',
-        width: 1080,
-        height: 1620,
-      },
-      {
-        id: 'ultrawide',
-        name: 'Ultrawide',
-        size: '2560 x 1080',
-        ratio: '21:9',
-        width: 2560,
-        height: 1080,
-      },
+      { id: 'widescreen', name: 'Widescreen', size: '1920 x 1080', ratio: '16:9', width: 1920, height: 1080 },
+      { id: 'full-portrait', name: 'Full Portrait', size: '1080 x 1920', ratio: '9:16', width: 1080, height: 1920 },
+      { id: 'square', name: 'Square', size: '1080 x 1080', ratio: '1:1', width: 1080, height: 1080 },
+      { id: 'landscape', name: 'Landscape', size: '1440 x 1080', ratio: '4:3', width: 1440, height: 1080 },
+      { id: 'portrait', name: 'Portrait', size: '1080 x 1350', ratio: '4:5', width: 1080, height: 1350 },
+      { id: 'landscape-post', name: 'Landscape Post', size: '1350 x 1080', ratio: '5:4', width: 1350, height: 1080 },
+      { id: 'vertical', name: 'Vertical', size: '1080 x 1620', ratio: '2:3', width: 1080, height: 1620 },
+      { id: 'ultrawide', name: 'Ultrawide', size: '2560 x 1080', ratio: '21:9', width: 2560, height: 1080 },
     ],
   },
 ]
@@ -192,22 +76,24 @@ function CanvasPresetIcon({ width, height }: { width: number; height: number }) 
   return <RectangleVertical className="size-3.5 text-muted-foreground" />
 }
 
-export function Inspector() {
-  const {
-    width,
-    height,
-    setWidth,
-    setHeight,
-    durationInFrames,
-    fps,
-    clips,
-    selectedClipId,
-  } = useEditor()
+export function CanvasInspector({
+  width,
+  height,
+  durationInFrames,
+  fps,
+  clips,
+  setWidth,
+  setHeight,
+}: {
+  width: number
+  height: number
+  durationInFrames: number
+  fps: number
+  clips: Clip[]
+  setWidth: (value: number) => void
+  setHeight: (value: number) => void
+}) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
-
-  const selectedClip = selectedClipId
-    ? clips.find((c) => c.id === selectedClipId) ?? null
-    : null
 
   const selectedCanvasPreset = useMemo(() => {
     const selected = CANVAS_SIZE_OPTIONS.find(
@@ -222,10 +108,6 @@ export function Inspector() {
       (option) => option.width === width && option.height === height,
     )
   }, [height, selectedCanvasPresetId, width])
-
-  if (selectedClip) {
-    return <ClipInspector clip={selectedClip} />
-  }
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-4 border-l p-3">
@@ -349,13 +231,13 @@ export function Inspector() {
           <p className="text-xs text-muted-foreground">No media yet.</p>
         ) : (
           <ul className="space-y-1">
-            {clips.map((c) => (
+            {clips.map((clip) => (
               <li
-                key={c.id}
+                key={clip.id}
                 className="truncate rounded bg-secondary/40 px-2 py-1 text-xs text-foreground"
-                title={c.name}
+                title={clip.name}
               >
-                {c.name}
+                {clip.name}
               </li>
             ))}
           </ul>

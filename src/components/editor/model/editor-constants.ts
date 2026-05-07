@@ -1,0 +1,9 @@
+export const FPS = 30
+export const IMAGE_DEFAULT_SECONDS = 5
+export const TEXT_DEFAULT_SECONDS = 5
+export const MIN_TIMELINE_ZOOM = 0.5
+export const MAX_TIMELINE_ZOOM = 4
+export const TIMELINE_ZOOM_STEP = 0.25
+export const MIN_PREVIEW_ZOOM = 0.25
+export const MAX_PREVIEW_ZOOM = 3
+export const PREVIEW_ZOOM_STEP = 0.25

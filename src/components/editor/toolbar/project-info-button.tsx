@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Code2, ExternalLink, AtSign } from 'lucide-react'
+import { AtSign } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
