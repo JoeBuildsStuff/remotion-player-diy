@@ -9,6 +9,7 @@ import {
   Scissors,
   SkipBack,
   SkipForward,
+  Trash,
   Volume2,
 } from 'lucide-react'
 
@@ -45,6 +46,7 @@ export function TransportBar() {
     seekTo,
     setVolume,
     splitClip,
+    removeClip,
   } = useEditor()
 
   const selectedClip = clips.find((c) => c.id === selectedClipId) ?? null
@@ -57,6 +59,11 @@ export function TransportBar() {
     if (!selectedClip || !canSplit) return
     splitClip(selectedClip.id, currentFrame)
     setSelectedClipId(null)
+  }
+
+  const handleDeleteSelected = () => {
+    if (!selectedClip) return
+    removeClip(selectedClip.id)
   }
 
   return (
@@ -87,6 +94,20 @@ export function TransportBar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Snap</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Delete selected item"
+              disabled={!selectedClip}
+              onClick={handleDeleteSelected}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete selected item</TooltipContent>
         </Tooltip>
       </ButtonGroup>
 

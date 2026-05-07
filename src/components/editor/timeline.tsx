@@ -9,7 +9,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { Eye, EyeOff, Volume2, VolumeX } from 'lucide-react'
+import { Eye, EyeOff, Trash, Volume2, VolumeX } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +22,7 @@ import { useEditor } from './editor-context'
 import type { Clip } from './types'
 
 const PX_PER_SECOND = 60
-const TRACK_HEADER_WIDTH = 122
+const TRACK_HEADER_WIDTH = 154
 const RULER_HEIGHT = 24
 const TRACK_HEIGHT = 44
 const MIN_CLIP_FRAMES = 1
@@ -182,6 +182,7 @@ export function Timeline() {
     seekTo,
     selectedClipId,
     setSelectedClipId,
+    removeClip,
     updateClip,
   } = useEditor()
   const trackAreaRef = useRef<HTMLDivElement | null>(null)
@@ -336,6 +337,12 @@ export function Timeline() {
     trackClips.forEach((clip) => updateClip(clip.id, { muted: !shouldUnmute }))
   }
 
+  const deleteTrack = (trackIndex: number) => {
+    clips
+      .filter((clip) => clip.trackIndex === trackIndex)
+      .forEach((clip) => removeClip(clip.id))
+  }
+
   const tickCount = Math.max(1, Math.ceil(totalSeconds))
 
   return (
@@ -368,7 +375,7 @@ export function Timeline() {
           return (
             <div
               key={track.index}
-              className="grid grid-cols-[2rem_1.75rem_1.75rem] items-center gap-1 border-b border-border/60 px-2 text-muted-foreground"
+              className="grid grid-cols-[2rem_1.75rem_1.75rem_1.75rem] items-center gap-1 border-b border-border/60 px-2 text-muted-foreground"
               style={{ height: TRACK_HEIGHT }}
             >
               <span className="text-center font-mono text-xs tabular-nums">
@@ -397,6 +404,14 @@ export function Timeline() {
                 ) : (
                   <Volume2 className="h-3.5 w-3.5" />
                 )}
+              </TimelineIconButton>
+
+              <TimelineIconButton
+                label="Delete row"
+                disabled={trackClips.length === 0}
+                onClick={() => deleteTrack(track.index)}
+              >
+                <Trash className="h-3.5 w-3.5" />
               </TimelineIconButton>
             </div>
           )
