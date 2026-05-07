@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   Download,
   Image as ImageIcon,
@@ -25,6 +25,7 @@ import {
 
 import { useEditor } from '../model/editor-context-value'
 import { ProjectInfoButton } from './project-info-button'
+import { RenderDialog } from './render-dialog'
 
 export function Toolbar() {
   const {
@@ -36,6 +37,7 @@ export function Toolbar() {
     zoomPreviewOut,
   } = useEditor()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [renderOpen, setRenderOpen] = useState(false)
 
   return (
     <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-2">
@@ -199,6 +201,7 @@ export function Toolbar() {
                 variant="outline"
                 size="icon"
                 aria-label="Export"
+                onClick={() => setRenderOpen(true)}
                 className="h-7 w-7"
               >
                 <Upload className="h-4 w-4" />
@@ -258,6 +261,8 @@ export function Toolbar() {
 
         <ProjectInfoButton />
       </div>
+
+      <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />
     </header>
   )
 }
