@@ -51,6 +51,156 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n))
 }
 
+function dbToVolumePercent(db: number) {
+  if (db <= -60) return 0
+  return clamp(10 ** (db / 20) * 100, 0, 100)
+}
+
+function volumePercentToDb(percent: number) {
+  if (percent <= 0) return -60
+  return 20 * Math.log10(clamp(percent, 0, 100) / 100)
+}
+
+const MIN_CLIP_SIZE = 20
+
+type CropSide = 'left' | 'top' | 'right' | 'bottom'
+
+function cropMaxForSide(clip: Clip, side: CropSide) {
+  if (side === 'left') {
+    return Math.max(0, clip.width + clip.cropLeft - MIN_CLIP_SIZE)
+  }
+  if (side === 'right') {
+    return Math.max(0, clip.width + clip.cropRight - MIN_CLIP_SIZE)
+  }
+  if (side === 'top') {
+    return Math.max(0, clip.height + clip.cropTop - MIN_CLIP_SIZE)
+  }
+
+  return Math.max(0, clip.height + clip.cropBottom - MIN_CLIP_SIZE)
+}
+
+function cropPatchForSide(
+  clip: Clip,
+  side: CropSide,
+  value: number,
+): Pick<
+  Clip,
+  | 'x'
+  | 'y'
+  | 'width'
+  | 'height'
+  | 'cropLeft'
+  | 'cropTop'
+  | 'cropRight'
+  | 'cropBottom'
+> {
+  const radians = (clip.rotation * Math.PI) / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const nextCropValue = clamp(
+    Math.round(value),
+    0,
+    cropMaxForSide(clip, side),
+  )
+  let nextWidth = clip.width
+  let nextHeight = clip.height
+  let nextCropLeft = clip.cropLeft
+  let nextCropTop = clip.cropTop
+  let nextCropRight = clip.cropRight
+  let nextCropBottom = clip.cropBottom
+
+  const anchoredPosition = (
+    anchorXRatio: number,
+    anchorYRatio: number,
+    width: number,
+    height: number,
+  ) => {
+    const oldCenterX = clip.width / 2
+    const oldCenterY = clip.height / 2
+    const oldAnchorX = anchorXRatio * clip.width
+    const oldAnchorY = anchorYRatio * clip.height
+    const oldAnchorOffsetX =
+      oldCenterX +
+      cos * (oldAnchorX - oldCenterX) -
+      sin * (oldAnchorY - oldCenterY)
+    const oldAnchorOffsetY =
+      oldCenterY +
+      sin * (oldAnchorX - oldCenterX) +
+      cos * (oldAnchorY - oldCenterY)
+    const oldAnchorScreenX = clip.x + oldAnchorOffsetX
+    const oldAnchorScreenY = clip.y + oldAnchorOffsetY
+
+    const nextCenterX = width / 2
+    const nextCenterY = height / 2
+    const nextAnchorX = anchorXRatio * width
+    const nextAnchorY = anchorYRatio * height
+    const nextAnchorOffsetX =
+      nextCenterX +
+      cos * (nextAnchorX - nextCenterX) -
+      sin * (nextAnchorY - nextCenterY)
+    const nextAnchorOffsetY =
+      nextCenterY +
+      sin * (nextAnchorX - nextCenterX) +
+      cos * (nextAnchorY - nextCenterY)
+
+    return {
+      x: oldAnchorScreenX - nextAnchorOffsetX,
+      y: oldAnchorScreenY - nextAnchorOffsetY,
+    }
+  }
+
+  const resizeFromCropChange = (currentCrop: number, targetCrop: number) => {
+    const delta = currentCrop - targetCrop
+
+    return {
+      sizeDelta: delta,
+      crop: targetCrop,
+    }
+  }
+
+  if (side === 'left') {
+    const next = resizeFromCropChange(clip.cropLeft, nextCropValue)
+    nextWidth = clip.width + next.sizeDelta
+    nextCropLeft = next.crop
+  }
+
+  if (side === 'right') {
+    const next = resizeFromCropChange(clip.cropRight, nextCropValue)
+    nextWidth = clip.width + next.sizeDelta
+    nextCropRight = next.crop
+  }
+
+  if (side === 'top') {
+    const next = resizeFromCropChange(clip.cropTop, nextCropValue)
+    nextHeight = clip.height + next.sizeDelta
+    nextCropTop = next.crop
+  }
+
+  if (side === 'bottom') {
+    const next = resizeFromCropChange(clip.cropBottom, nextCropValue)
+    nextHeight = clip.height + next.sizeDelta
+    nextCropBottom = next.crop
+  }
+
+  const anchor = anchoredPosition(
+    side === 'left' ? 1 : side === 'right' ? 0 : 0.5,
+    side === 'top' ? 1 : side === 'bottom' ? 0 : 0.5,
+    nextWidth,
+    nextHeight,
+  )
+
+  return {
+    x: Math.round(anchor.x),
+    y: Math.round(anchor.y),
+    width: Math.round(nextWidth),
+    height: Math.round(nextHeight),
+    cropLeft: Math.round(nextCropLeft),
+    cropTop: Math.round(nextCropTop),
+    cropRight: Math.round(nextCropRight),
+    cropBottom: Math.round(nextCropBottom),
+  }
+}
+
 type Props = {
   clip: Clip
 }
@@ -494,29 +644,37 @@ export function ClipInspector({ clip }: Props) {
               label="Left"
               value={clip.cropLeft}
               suffix="px"
-              max={500}
-              onChange={(v) => updateClip(clip.id, { cropLeft: v })}
+              max={cropMaxForSide(clip, 'left')}
+              onChange={(v) =>
+                updateClip(clip.id, cropPatchForSide(clip, 'left', v))
+              }
             />
             <SliderRow
               label="Top"
               value={clip.cropTop}
               suffix="px"
-              max={500}
-              onChange={(v) => updateClip(clip.id, { cropTop: v })}
+              max={cropMaxForSide(clip, 'top')}
+              onChange={(v) =>
+                updateClip(clip.id, cropPatchForSide(clip, 'top', v))
+              }
             />
             <SliderRow
               label="Right"
               value={clip.cropRight}
               suffix="px"
-              max={500}
-              onChange={(v) => updateClip(clip.id, { cropRight: v })}
+              max={cropMaxForSide(clip, 'right')}
+              onChange={(v) =>
+                updateClip(clip.id, cropPatchForSide(clip, 'right', v))
+              }
             />
             <SliderRow
               label="Bottom"
               value={clip.cropBottom}
               suffix="px"
-              max={500}
-              onChange={(v) => updateClip(clip.id, { cropBottom: v })}
+              max={cropMaxForSide(clip, 'bottom')}
+              onChange={(v) =>
+                updateClip(clip.id, cropPatchForSide(clip, 'bottom', v))
+              }
             />
           </div>
         </Section>
@@ -569,12 +727,13 @@ export function ClipInspector({ clip }: Props) {
               </div>
               <SliderRow
                 label="Volume"
-                value={clip.volumeDb}
-                min={-60}
-                max={12}
-                step={0.1}
-                format={(v) => `${v.toFixed(1)} dB`}
-                onChange={(v) => updateClip(clip.id, { volumeDb: v })}
+                value={dbToVolumePercent(clip.volumeDb)}
+                max={100}
+                step={1}
+                format={(v) => `${Math.round(v)}%`}
+                onChange={(v) =>
+                  updateClip(clip.id, { volumeDb: volumePercentToDb(v) })
+                }
               />
               <SliderRow
                 label="Fade In"
