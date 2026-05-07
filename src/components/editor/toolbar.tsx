@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip'
 
 import { useEditor } from './editor-context'
+import { ProjectInfoButton } from './project-info-button'
 
 export function Toolbar() {
   const {
@@ -208,51 +209,55 @@ export function Toolbar() {
         </ButtonGroup>
       </div>
 
-      <ButtonGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Zoom out"
-              disabled={previewZoom <= 0.25}
-              onClick={zoomPreviewOut}
-              className="h-7 w-7"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom out</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Fit"
-              onClick={resetPreviewZoom}
-            >
-              Fit
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Fit</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Zoom in"
-              disabled={previewZoom >= 3}
-              onClick={zoomPreviewIn}
-              className="h-7 w-7"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Zoom in</TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
+      <div className="flex items-center gap-1.5">
+        <ButtonGroup>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Zoom out"
+                disabled={previewZoom <= 0.25}
+                onClick={zoomPreviewOut}
+                className="h-7 w-7"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Zoom out</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Fit"
+                onClick={resetPreviewZoom}
+              >
+                Fit
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Fit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Zoom in"
+                disabled={previewZoom >= 3}
+                onClick={zoomPreviewIn}
+                className="h-7 w-7"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Zoom in</TooltipContent>
+          </Tooltip>
+        </ButtonGroup>
+
+        <ProjectInfoButton />
+      </div>
     </header>
   )
 }
