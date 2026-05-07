@@ -34,6 +34,7 @@ async function main() {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
+    allowOverwrite: true,
   })
 
   console.log(
