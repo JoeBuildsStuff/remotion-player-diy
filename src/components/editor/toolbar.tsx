@@ -26,7 +26,13 @@ import {
 import { useEditor } from './editor-context'
 
 export function Toolbar() {
-  const { addFiles } = useEditor()
+  const {
+    addFiles,
+    previewZoom,
+    resetPreviewZoom,
+    zoomPreviewIn,
+    zoomPreviewOut,
+  } = useEditor()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   return (
@@ -207,6 +213,8 @@ export function Toolbar() {
               variant="outline"
               size="icon"
               aria-label="Zoom out"
+              disabled={previewZoom <= 0.25}
+              onClick={zoomPreviewOut}
               className="h-7 w-7"
             >
               <Minus className="h-4 w-4" />
@@ -220,6 +228,7 @@ export function Toolbar() {
               variant="outline"
               size="icon"
               aria-label="Fit"
+              onClick={resetPreviewZoom}
             >
               Fit
             </Button>
@@ -232,6 +241,8 @@ export function Toolbar() {
               variant="outline"
               size="icon"
               aria-label="Zoom in"
+              disabled={previewZoom >= 3}
+              onClick={zoomPreviewIn}
               className="h-7 w-7"
             >
               <Plus className="h-4 w-4" />

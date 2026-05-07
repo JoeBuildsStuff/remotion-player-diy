@@ -38,13 +38,17 @@ export function TransportBar() {
     currentFrame,
     durationInFrames,
     isPlaying,
-    volume,
+    isLooping,
+    timelineZoom,
     clips,
     selectedClipId,
     setSelectedClipId,
     togglePlay,
     seekTo,
-    setVolume,
+    setIsLooping,
+    setTimelineZoom,
+    zoomTimelineIn,
+    zoomTimelineOut,
     splitClip,
     removeClip,
   } = useEditor()
@@ -154,9 +158,11 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant={isLooping ? 'secondary' : 'outline'}
               size="icon"
               aria-label="Loop"
+              aria-pressed={isLooping}
+              onClick={() => setIsLooping(!isLooping)}
               className="h-7 w-7"
             >
               <Repeat className="h-4 w-4" />
@@ -191,15 +197,37 @@ export function TransportBar() {
           <TooltipContent>Fullscreen</TooltipContent>
         </Tooltip>
         <div className="ml-4 flex items-center gap-1.5">
-          <Minus className="h-3 w-3 text-muted-foreground" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Timeline zoom out"
+            disabled={timelineZoom <= 0.5}
+            onClick={zoomTimelineOut}
+            className="text-muted-foreground"
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
           <Slider
-            value={[Math.round(volume * 100)]}
-            onValueChange={(v) => setVolume((v[0] ?? 0) / 100)}
-            max={100}
+            aria-label="Timeline zoom"
+            value={[Math.round(timelineZoom * 100)]}
+            onValueChange={(v) => setTimelineZoom((v[0] ?? 100) / 100)}
+            min={50}
+            max={400}
             step={1}
             className="w-24"
           />
-          <Plus className="h-3 w-3 text-muted-foreground" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Timeline zoom in"
+            disabled={timelineZoom >= 4}
+            onClick={zoomTimelineIn}
+            className="text-muted-foreground"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
       </ButtonGroup>
     </div>

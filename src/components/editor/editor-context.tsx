@@ -19,6 +19,9 @@ type EditorState = {
   durationInFrames: number
   currentFrame: number
   isPlaying: boolean
+  isLooping: boolean
+  timelineZoom: number
+  previewZoom: number
   playerRef: React.RefObject<PlayerRef | null>
   selectedClipId: string | null
   setSelectedClipId: (id: string | null) => void
@@ -27,6 +30,14 @@ type EditorState = {
   setHeight: (v: number) => void
   setCurrentFrame: (f: number) => void
   setIsPlaying: (p: boolean) => void
+  setIsLooping: (v: boolean) => void
+  setTimelineZoom: (v: number) => void
+  zoomTimelineIn: () => void
+  zoomTimelineOut: () => void
+  resetTimelineZoom: () => void
+  zoomPreviewIn: () => void
+  zoomPreviewOut: () => void
+  resetPreviewZoom: () => void
   addFiles: (files: FileList | File[]) => Promise<void>
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void
@@ -41,6 +52,12 @@ const EditorContext = createContext<EditorState | null>(null)
 
 const FPS = 30
 const IMAGE_DEFAULT_SECONDS = 5
+const MIN_TIMELINE_ZOOM = 0.5
+const MAX_TIMELINE_ZOOM = 4
+const TIMELINE_ZOOM_STEP = 0.25
+const MIN_PREVIEW_ZOOM = 0.25
+const MAX_PREVIEW_ZOOM = 3
+const PREVIEW_ZOOM_STEP = 0.25
 
 type MediaMetadata = {
   durationInSeconds: number
@@ -53,6 +70,10 @@ function fileTypeOf(file: File): ClipType | null {
   if (file.type.startsWith('audio/')) return 'audio'
   if (file.type.startsWith('image/')) return 'image'
   return null
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 function trackFor(type: ClipType, clips: Clip[]): number {
@@ -149,6 +170,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [clips, setClips] = useState<Clip[]>([])
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isLooping, setIsLooping] = useState(false)
+  const [timelineZoom, setTimelineZoom] = useState(1)
+  const [previewZoom, setPreviewZoom] = useState(1)
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
 
   const durationInFrames = useMemo(() => {
@@ -283,6 +307,42 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     else p.play()
   }, [])
 
+  const updateTimelineZoom = useCallback((value: number) => {
+    setTimelineZoom(clamp(value, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM))
+  }, [])
+
+  const zoomTimelineIn = useCallback(() => {
+    setTimelineZoom((prev) =>
+      clamp(prev + TIMELINE_ZOOM_STEP, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM),
+    )
+  }, [])
+
+  const zoomTimelineOut = useCallback(() => {
+    setTimelineZoom((prev) =>
+      clamp(prev - TIMELINE_ZOOM_STEP, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM),
+    )
+  }, [])
+
+  const resetTimelineZoom = useCallback(() => {
+    setTimelineZoom(1)
+  }, [])
+
+  const zoomPreviewIn = useCallback(() => {
+    setPreviewZoom((prev) =>
+      clamp(prev + PREVIEW_ZOOM_STEP, MIN_PREVIEW_ZOOM, MAX_PREVIEW_ZOOM),
+    )
+  }, [])
+
+  const zoomPreviewOut = useCallback(() => {
+    setPreviewZoom((prev) =>
+      clamp(prev - PREVIEW_ZOOM_STEP, MIN_PREVIEW_ZOOM, MAX_PREVIEW_ZOOM),
+    )
+  }, [])
+
+  const resetPreviewZoom = useCallback(() => {
+    setPreviewZoom(1)
+  }, [])
+
   const value: EditorState = {
     fps: FPS,
     width,
@@ -292,6 +352,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     durationInFrames,
     currentFrame,
     isPlaying,
+    isLooping,
+    timelineZoom,
+    previewZoom,
     playerRef,
     selectedClipId,
     setSelectedClipId,
@@ -300,6 +363,14 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setHeight,
     setCurrentFrame,
     setIsPlaying,
+    setIsLooping,
+    setTimelineZoom: updateTimelineZoom,
+    zoomTimelineIn,
+    zoomTimelineOut,
+    resetTimelineZoom,
+    zoomPreviewIn,
+    zoomPreviewOut,
+    resetPreviewZoom,
     addFiles,
     updateClip,
     removeClip,

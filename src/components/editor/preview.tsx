@@ -13,6 +13,8 @@ export function Preview() {
     height,
     durationInFrames,
     volume,
+    isLooping,
+    previewZoom,
     selectedClipId,
     setSelectedClipId,
     addFiles,
@@ -69,7 +71,7 @@ export function Preview() {
   return (
     <div
       ref={previewRef}
-      className="relative flex min-w-0 flex-1 items-center justify-center bg-secondary/40 p-4"
+      className="relative flex min-w-0 flex-1 overflow-auto bg-secondary/40 p-4"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -84,10 +86,10 @@ export function Preview() {
       }}
     >
       <div
-        className="relative flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
+        className="relative m-auto flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
         style={{
-          width: canvasSize.width,
-          height: canvasSize.height,
+          width: canvasSize.width * previewZoom,
+          height: canvasSize.height * previewZoom,
         }}
       >
         {clips.length === 0 ? (
@@ -111,7 +113,7 @@ export function Preview() {
             compositionWidth={width}
             compositionHeight={height}
             controls={false}
-            loop={false}
+            loop={isLooping}
             overflowVisible
             style={{ width: '100%', height: '100%' }}
             acknowledgeRemotionLicense

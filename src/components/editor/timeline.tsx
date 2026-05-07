@@ -21,7 +21,7 @@ import {
 import { useEditor } from './editor-context'
 import type { Clip } from './types'
 
-const PX_PER_SECOND = 60
+const BASE_PX_PER_SECOND = 60
 const TRACK_HEADER_WIDTH = 154
 const RULER_HEIGHT = 24
 const TRACK_HEIGHT = 44
@@ -178,6 +178,7 @@ export function Timeline() {
     clips,
     fps,
     durationInFrames,
+    timelineZoom,
     currentFrame,
     seekTo,
     selectedClipId,
@@ -200,8 +201,9 @@ export function Timeline() {
   )
 
   const totalSeconds = Math.max(1, durationInFrames / fps)
-  const trackWidth = totalSeconds * PX_PER_SECOND
-  const playheadLeft = (currentFrame / fps) * PX_PER_SECOND
+  const pxPerSecond = BASE_PX_PER_SECOND * timelineZoom
+  const trackWidth = totalSeconds * pxPerSecond
+  const playheadLeft = (currentFrame / fps) * pxPerSecond
   const timelineTracks = useMemo(
     () => timelineTracksFor(clips, dragTrackIndexes ?? []),
     [clips, dragTrackIndexes],
@@ -214,7 +216,7 @@ export function Timeline() {
     if (!el) return
     const rect = el.getBoundingClientRect()
     const x = e.clientX - rect.left - TRACK_HEADER_WIDTH + el.scrollLeft
-    const seconds = Math.max(0, x / PX_PER_SECOND)
+    const seconds = Math.max(0, x / pxPerSecond)
     const frame = Math.min(
       durationInFrames - 1,
       Math.max(0, Math.round(seconds * fps)),
@@ -251,7 +253,7 @@ export function Timeline() {
     if (!drag || drag.pointerId !== e.pointerId) return
     if (drag.type !== 'resize') return
     const deltaFrames = Math.round(
-      ((e.clientX - drag.startX) / PX_PER_SECOND) * fps,
+      ((e.clientX - drag.startX) / pxPerSecond) * fps,
     )
     updateClip(
       drag.clipId,
@@ -298,7 +300,7 @@ export function Timeline() {
       return
     }
 
-    const deltaFrames = Math.round((delta.x / PX_PER_SECOND) * fps)
+    const deltaFrames = Math.round((delta.x / pxPerSecond) * fps)
     const overTrackIndex = over ? trackIndexFromDndId(String(over.id)) : null
     const nextTrackIndex =
       overTrackIndex ??
@@ -441,7 +443,7 @@ export function Timeline() {
                   <div
                     key={i}
                     className="absolute top-0 h-full border-l border-border"
-                    style={{ left: i * PX_PER_SECOND }}
+                    style={{ left: i * pxPerSecond }}
                   >
                     <span className="absolute left-1 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
                       {`00:${String(i).padStart(2, '0')}`}
@@ -461,9 +463,9 @@ export function Timeline() {
                   {clips
                     .filter((c) => c.trackIndex === track.index)
                     .map((clip) => {
-                      const left = (clip.startFrame / fps) * PX_PER_SECOND
+                      const left = (clip.startFrame / fps) * pxPerSecond
                       const width =
-                        (clip.durationInFrames / fps) * PX_PER_SECOND
+                        (clip.durationInFrames / fps) * pxPerSecond
                       const canResizeStart =
                         clip.durationInFrames > MIN_CLIP_FRAMES ||
                         (clip.startFrame > 0 && clip.trimBeforeFrames > 0)
