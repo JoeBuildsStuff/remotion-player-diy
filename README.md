@@ -2,6 +2,8 @@
 
 A browser-based Remotion editor for arranging media and text clips, previewing the composition, and rendering finished videos.
 
+![Remotion Player DIY screenshot](./public/remotion-player-editor-screenshot.png)
+
 The editor can be used locally without Vercel if you only want to build and preview content in the browser. Exporting/rendering videos is server-side because browser/client-side rendering has practical limits: long videos can be slow, memory-constrained, blocked by local `blob:` URLs, and unreliable across devices. This project's server-side render path is set up for Vercel using Vercel Blob and Vercel Sandbox.
 
 ## Documentation
