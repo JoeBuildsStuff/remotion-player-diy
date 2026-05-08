@@ -16,8 +16,11 @@ The import flow also probes metadata:
 - Images use natural width/height and a default image duration.
 - Videos use duration and video dimensions from a temporary media element.
 - Audio uses duration from a temporary audio element.
+- Media clips store the imported `File.size`, which the Source section displays as the clip's file size.
 
 New clips are placed on the first existing track for their type. If no matching track exists, the editor creates the next available track. Within a track, new clips are appended after the last clip.
+
+While a file is dragged over the preview canvas, the editor shows a dashed blue token border around the drop target without instructional overlay text.
 
 ## Preview and Canvas Editing
 
@@ -45,13 +48,22 @@ Users can:
 - Drag clips vertically to move between tracks.
 - Drag trim handles on a clip's start or end.
 - Split the selected clip at the current playhead frame.
-- Delete the selected clip.
+- Delete the selected clip with the transport delete button or the Delete/Backspace key.
 - Toggle track visibility for visual clips.
 - Toggle track mute for video and audio clips.
 - Delete all clips on a track.
 - Zoom the timeline with the transport slider or zoom buttons.
 
 Timeline values are frame-based internally. The UI generally displays timing in seconds.
+
+Timeline clip color is based on clip type:
+
+- Video clips use the editor selection blue tokens.
+- Audio clips use purple editor tokens.
+- Image clips use teal editor tokens.
+- Text clips use the existing primary-token text clip treatment.
+
+Selected timeline clips use a matching type-colored selection ring. On-canvas selection outlines for visual clips use the same token family as the selected clip type.
 
 ## Inspector Editing
 
@@ -68,7 +80,7 @@ When no clip is selected, the canvas inspector is shown:
 
 When a media clip is selected, the clip inspector is shown:
 
-- Source: file name, duration, and upload/status display.
+- Source: file name, duration, and imported file size when available.
 - Timing: timeline start, clip length, and source trim.
 - Layout: alignment, position, dimensions, aspect lock, and rotation.
 - Fill: opacity and corner radius.
@@ -94,6 +106,7 @@ The transport bar controls playback through the Remotion Player ref:
 - Play or pause.
 - Jump to end.
 - Toggle looping.
+- Enter fullscreen playback for the current composition.
 - Display current time and total duration.
 
 Duration is computed from the latest clip end time. Empty projects still render as a minimum one-frame preview internally.
