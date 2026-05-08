@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 
 import type { Clip } from '../model/editor-types'
+import { AudioWaveform } from './audio-waveform'
 import {
   timelineClipDndId,
   translateStyle,
@@ -76,6 +77,14 @@ export function TimelineClip({
         left,
         width,
         transform: translateStyle(transform),
+        ...(clip.type === 'image' && clip.src
+          ? {
+              backgroundImage: `url(${clip.src})`,
+              backgroundRepeat: 'repeat-x',
+              backgroundSize: 'auto 100%',
+              backgroundPosition: 'left center',
+            }
+          : null),
       }}
       title={clip.name}
     >
@@ -85,7 +94,19 @@ export function TimelineClip({
         selected={isSelected}
         onPointerDown={(e) => startClipResize(e, clip, 'start')}
       />
-      <span className="block truncate leading-9">{clip.name}</span>
+      {clip.type === 'audio' && clip.src && width > 0 ? (
+        <AudioWaveform src={clip.src} width={width} height={28} />
+      ) : null}
+      <span
+        className={`relative block truncate leading-9 ${
+          clip.type === 'image'
+            ? 'rounded-sm bg-background/60 px-1 text-foreground backdrop-blur-[2px]'
+            : ''
+        } ${clip.type === 'audio' ? 'rounded-sm bg-background/60 px-1 text-foreground' : ''}`}
+        style={clip.type === 'image' || clip.type === 'audio' ? { display: 'inline-block' } : undefined}
+      >
+        {clip.name}
+      </span>
       <TimelineResizeHandle
         side="end"
         disabled={!canResizeEnd}
