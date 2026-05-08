@@ -17,6 +17,9 @@ importers:
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
+      '@remotion/media-utils':
+        specifier: 4.0.458
+        version: 4.0.458(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@remotion/player':
         specifier: ^4.0.458
         version: 4.0.458(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
