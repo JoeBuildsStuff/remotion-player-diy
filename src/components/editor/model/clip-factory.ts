@@ -42,6 +42,7 @@ export function createMediaClip(
     type,
     src,
     uploadStatus: 'idle',
+    sourceFileSizeBytes: file.size,
     name: file.name,
     sourceDurationInFrames: durationInFrames,
     startFrame: lastEndForTrack(clips, trackIndex),

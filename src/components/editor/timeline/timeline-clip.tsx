@@ -44,6 +44,12 @@ export function TimelineClip({
         roleDescription: 'timeline clip',
       },
     })
+  const selectionRing =
+    clip.type === 'audio'
+      ? 'ring-editor-audio'
+      : clip.type === 'image'
+        ? 'ring-editor-image'
+        : 'ring-editor-selection'
 
   return (
     <div
@@ -64,7 +70,7 @@ export function TimelineClip({
       className={`group absolute top-1 bottom-1 touch-none select-none overflow-hidden rounded-sm border px-1.5 text-[10px] text-foreground shadow-sm ${
         isHidden ? 'opacity-45' : ''
       } ${color} ${
-        isSelected ? 'ring-2 ring-editor-selection ring-offset-1 ring-offset-background' : ''
+        isSelected ? `ring-2 ${selectionRing} ring-offset-1 ring-offset-background` : ''
       } ${isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab'}`}
       style={{
         left,

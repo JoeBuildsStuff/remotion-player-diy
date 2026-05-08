@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlayerRef } from '@remotion/player'
 
 import { uploadSourceFile } from '@/lib/upload-client'
@@ -24,6 +24,7 @@ import { clamp, durationInFramesFor } from './time'
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const playerRef = useRef<PlayerRef | null>(null)
+  const fullscreenElementRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(1080)
   const [height, setHeight] = useState(1920)
   const [volume, setVolume] = useState(0.4)
@@ -142,6 +143,31 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setSelectedClipId((prev) => (prev === id ? null : prev))
   }, [])
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      const target = event.target
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (!selectedClipId) return
+
+      event.preventDefault()
+      removeClip(selectedClipId)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [removeClip, selectedClipId])
+
   const seekTo = useCallback((frame: number) => {
     playerRef.current?.seekTo(frame)
   }, [])
@@ -212,6 +238,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       timelineZoom,
       previewZoom,
       playerRef,
+      fullscreenElementRef,
       selectedClipId,
       setSelectedClipId,
       setVolume,
@@ -245,6 +272,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       currentFrame,
       durationInFrames,
       exportSettings,
+      fullscreenElementRef,
       height,
       isLooping,
       isPlaying,

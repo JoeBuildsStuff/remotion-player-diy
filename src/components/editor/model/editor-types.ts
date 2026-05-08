@@ -11,6 +11,7 @@ export type Clip = {
   /** Upload state for the source media. 'idle' for text clips (no upload needed). */
   uploadStatus?: UploadStatus
   uploadError?: string
+  sourceFileSizeBytes?: number
   name: string
   sourceDurationInFrames: number
   startFrame: number

@@ -33,6 +33,8 @@ export function TransportBar() {
     isPlaying,
     isLooping,
     timelineZoom,
+    playerRef,
+    fullscreenElementRef,
     clips,
     selectedClipId,
     setSelectedClipId,
@@ -61,6 +63,18 @@ export function TransportBar() {
   const handleDeleteSelected = () => {
     if (!selectedClip) return
     removeClip(selectedClip.id)
+  }
+
+  const handleFullscreen = async () => {
+    const element = fullscreenElementRef.current
+    if (!element || !element.requestFullscreen) return
+
+    try {
+      await element.requestFullscreen()
+      playerRef.current?.play()
+    } catch {
+      // Browser fullscreen can be rejected by permissions or gesture policy.
+    }
   }
 
   return (
@@ -182,6 +196,10 @@ export function TransportBar() {
               variant="outline"
               size="icon"
               aria-label="Fullscreen"
+              disabled={clips.length === 0}
+              onClick={() => {
+                void handleFullscreen()
+              }}
               className="h-7 w-7"
             >
               <Maximize className="h-4 w-4" />

@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { useCurrentScale } from 'remotion'
 
 import { Badge } from '@/components/ui/badge'
+import { clipColorVars } from '../model/clip-colors'
 import type { Clip } from '../model/editor-types'
 import {
   HANDLE_HIT_SIZE,
@@ -32,6 +33,7 @@ export function SelectionOutline({
   const handleSize = HANDLE_SIZE / scale
   const hitSize = HANDLE_HIT_SIZE / scale
   const rotationHandleOffset = ROTATION_HANDLE_OFFSET / scale
+  const colors = clipColorVars(clip.type)
   const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
     id: clip.id,
     data: {
@@ -123,7 +125,7 @@ export function SelectionOutline({
             style={{
               position: 'absolute',
               inset: 0,
-              border: `${borderWidth}px solid var(--editor-selection)`,
+              border: `${borderWidth}px solid ${colors.color}`,
               borderRadius: clip.borderRadius,
               boxSizing: 'border-box',
               pointerEvents: 'none',
@@ -156,12 +158,11 @@ export function SelectionOutline({
                 top: `calc(50% + ${handleSize / 2}px)`,
                 width: borderWidth,
                 height: rotationHandleOffset - handleSize / 2,
-                background: 'var(--editor-selection)',
+                background: colors.color,
                 transform: 'translateX(-50%)',
               }}
             />
             <span
-              className="flex items-center justify-center text-editor-selection"
               style={{
                 position: 'absolute',
                 left: '50%',
@@ -170,7 +171,7 @@ export function SelectionOutline({
                 height: handleSize,
                 borderRadius: '999px',
                 background: 'var(--background)',
-                border: `${borderWidth}px solid var(--editor-selection)`,
+                border: `${borderWidth}px solid ${colors.color}`,
                 boxShadow: '0 1px 2px rgb(0 0 0 / 0.25)',
                 transform: 'translate(-50%, -50%)',
               }}
@@ -198,7 +199,7 @@ export function SelectionOutline({
                   width: handleSize,
                   height: handleSize,
                   borderRadius: '999px',
-                  background: 'var(--editor-selection)',
+                  background: colors.color,
                   border: `${borderWidth}px solid var(--background)`,
                   boxShadow: '0 1px 2px rgb(0 0 0 / 0.25)',
                   transform: 'translate(-50%, -50%)',
@@ -210,7 +211,7 @@ export function SelectionOutline({
           <Badge
             aria-hidden="true"
             variant="outline"
-            className="absolute bg-editor-selection! text-foreground shadow-sm pointer-events-none -translate-x-1/2"
+            className="absolute text-foreground shadow-sm pointer-events-none -translate-x-1/2"
             style={{
               left: '50%',
               bottom: -30 / scale,
@@ -218,6 +219,7 @@ export function SelectionOutline({
               padding: `0 ${8 / scale}px`,
               fontSize: 10 / scale,
               lineHeight: 1,
+              background: colors.color,
             }}
           >
             {Math.round(clip.width)} x {Math.round(clip.height)}
