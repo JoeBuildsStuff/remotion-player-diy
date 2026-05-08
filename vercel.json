@@ -8,6 +8,16 @@
     "api/upload.ts": {
       "memory": 512,
       "maxDuration": 60
+    },
+    "api/cleanup.ts": {
+      "memory": 512,
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
