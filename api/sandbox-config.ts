@@ -1,0 +1,2 @@
+export const SANDBOX_CREATING_TIMEOUT = 15 * 60 * 1000
+

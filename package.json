@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "vercel-build": "tsc -b && vite build && tsx create-snapshot.ts",
+    "vercel-build": "tsc -b && vite build",
     "create-snapshot": "tsx create-snapshot.ts",
     "remotion": "remotion studio",
     "render": "remotion render",
