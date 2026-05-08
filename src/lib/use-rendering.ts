@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 
+import type { ExportSettings } from '@/components/editor/model/editor-context-value'
 import type { Clip } from '@/components/editor/model/editor-types'
 
 const SHARED_SECRET = import.meta.env.VITE_RENDER_SHARED_SECRET as
@@ -28,6 +29,7 @@ export type RenderInputs = {
   width: number
   height: number
   durationInFrames: number
+  exportSettings: ExportSettings
 }
 
 /**
@@ -69,6 +71,7 @@ function buildRenderPayload(inputs: RenderInputs) {
       height: inputs.height,
       durationInFrames: inputs.durationInFrames,
     },
+    exportSettings: inputs.exportSettings,
   }
 }
 

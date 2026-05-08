@@ -14,7 +14,11 @@ import {
   TIMELINE_ZOOM_STEP,
 } from './editor-constants'
 import type { Clip } from './editor-types'
-import { EditorContext, type EditorState } from './editor-context-value'
+import {
+  EditorContext,
+  type EditorState,
+  type ExportSettings,
+} from './editor-context-value'
 import { importMediaFiles } from './media-import'
 import { clamp, durationInFramesFor } from './time'
 
@@ -23,6 +27,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [width, setWidth] = useState(1080)
   const [height, setHeight] = useState(1920)
   const [volume, setVolume] = useState(0.4)
+  const [exportSettings, setExportSettings] = useState<ExportSettings>({
+    quality: 70,
+    audioBitrateKbps: 128,
+    resolutionScale: 100,
+  })
   const [clips, setClips] = useState<Clip[]>([])
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -194,6 +203,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       width,
       height,
       volume,
+      exportSettings,
       clips,
       durationInFrames,
       currentFrame,
@@ -205,6 +215,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       selectedClipId,
       setSelectedClipId,
       setVolume,
+      setExportSettings,
       setWidth,
       setHeight,
       setCurrentFrame,
@@ -233,6 +244,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       clips,
       currentFrame,
       durationInFrames,
+      exportSettings,
       height,
       isLooping,
       isPlaying,

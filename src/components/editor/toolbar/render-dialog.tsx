@@ -27,7 +27,8 @@ function formatBytes(bytes: number) {
 }
 
 export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
-  const { clips, fps, width, height, durationInFrames } = useEditor()
+  const { clips, fps, width, height, durationInFrames, exportSettings } =
+    useEditor()
   const { state, renderMedia, reset } = useRendering()
 
   // List of media clips that are still uploading or failed — we won't render
@@ -49,7 +50,14 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
     if (clips.length === 0) return
     if (pendingUploads.length > 0) return
 
-    void renderMedia({ clips, fps, width, height, durationInFrames })
+    void renderMedia({
+      clips,
+      fps,
+      width,
+      height,
+      durationInFrames,
+      exportSettings,
+    })
   }, [
     open,
     state.status,
@@ -58,6 +66,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
     width,
     height,
     durationInFrames,
+    exportSettings,
     pendingUploads.length,
     renderMedia,
   ])
@@ -154,6 +163,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
                   width,
                   height,
                   durationInFrames,
+                  exportSettings,
                 })
               }}
             >
