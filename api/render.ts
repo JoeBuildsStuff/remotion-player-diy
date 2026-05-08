@@ -83,13 +83,11 @@ export async function POST(request: Request): Promise<Response> {
     try {
       await send({ type: 'phase', phase: 'Creating sandbox...', progress: 0 })
 
-      let usesPrebuiltSnapshot = false
       let sandbox
 
       if (process.env.VERCEL) {
         try {
           sandbox = await restoreSnapshot()
-          usesPrebuiltSnapshot = true
         } catch (err) {
           console.warn('[render] sandbox snapshot unavailable, creating sandbox:', err)
           await send({
@@ -125,12 +123,11 @@ export async function POST(request: Request): Promise<Response> {
       }
 
       try {
-        // Prebuilt snapshots already contain the bundle. Fresh sandboxes need
-        // the bundle copied in before rendering.
-        if (!usesPrebuiltSnapshot) {
-          bundleRemotionProject('.remotion')
-          await addBundleToSandbox({ sandbox, bundleDir: '.remotion' })
-        }
+        // Snapshots intentionally contain only node_modules — bundle the
+        // current Remotion project on every render so deployed code never
+        // drifts from a stale snapshot.
+        bundleRemotionProject('.remotion')
+        await addBundleToSandbox({ sandbox, bundleDir: '.remotion' })
 
         const { sandboxFilePath, contentType } = await renderMediaOnVercel({
           sandbox,
