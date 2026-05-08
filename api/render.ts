@@ -11,6 +11,7 @@ import { COMP_NAME } from '../remotion/constants.js'
 import { ClipSchema } from '../remotion/schema.js'
 import { bundleRemotionProject, formatSSE, type RenderProgress } from './_render-helpers.js'
 import { restoreSnapshot } from './_restore-snapshot.js'
+import { SANDBOX_CREATING_TIMEOUT } from './sandbox-config.js'
 
 const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
 
@@ -82,23 +83,51 @@ export async function POST(request: Request): Promise<Response> {
     try {
       await send({ type: 'phase', phase: 'Creating sandbox...', progress: 0 })
 
-      const sandbox = process.env.VERCEL
-        ? await restoreSnapshot()
-        : await createSandbox({
+      let usesPrebuiltSnapshot = false
+      let sandbox
+
+      if (process.env.VERCEL) {
+        try {
+          sandbox = await restoreSnapshot()
+          usesPrebuiltSnapshot = true
+        } catch (err) {
+          console.warn('[render] sandbox snapshot unavailable, creating sandbox:', err)
+          await send({
+            type: 'phase',
+            phase: 'Creating sandbox...',
+            progress: 0,
+            subtitle: 'No prebuilt snapshot was found, so this render may start slower.',
+          })
+          sandbox = await createSandbox({
+            timeoutInMilliseconds: SANDBOX_CREATING_TIMEOUT,
             onProgress: async ({ progress, message }) => {
               await send({
                 type: 'phase',
                 phase: message,
                 progress,
-                subtitle: 'This is only needed during local development.',
+                subtitle: 'Preparing a fresh render sandbox.',
               })
             },
           })
+        }
+      } else {
+        sandbox = await createSandbox({
+          timeoutInMilliseconds: SANDBOX_CREATING_TIMEOUT,
+          onProgress: async ({ progress, message }) => {
+            await send({
+              type: 'phase',
+              phase: message,
+              progress,
+              subtitle: 'This is only needed during local development.',
+            })
+          },
+        })
+      }
 
       try {
-        // In production we use a prebuilt snapshot that already contains the
-        // bundle. Locally, build + push it on each render.
-        if (!process.env.VERCEL) {
+        // Prebuilt snapshots already contain the bundle. Fresh sandboxes need
+        // the bundle copied in before rendering.
+        if (!usesPrebuiltSnapshot) {
           bundleRemotionProject('.remotion')
           await addBundleToSandbox({ sandbox, bundleDir: '.remotion' })
         }

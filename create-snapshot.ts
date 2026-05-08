@@ -2,13 +2,14 @@
 // it, then writes the snapshot ID to Vercel Blob. The /api/render endpoint
 // loads the snapshot at request time so cold renders skip `npm install`.
 //
-// Run via `pnpm create-snapshot` — wired into the Vercel build command in
-// package.json so a snapshot is created on every deploy.
+// Run via `pnpm create-snapshot` when the render sandbox image needs to be
+// refreshed. Normal app deploys do not depend on this snapshot step.
 
 import { addBundleToSandbox, createSandbox } from '@remotion/vercel'
 import { del, list, put } from '@vercel/blob'
 
 import { bundleRemotionProject } from './api/_render-helpers'
+import { SANDBOX_CREATING_TIMEOUT } from './api/sandbox-config'
 import { BUILD_DIR } from './build-dir.mjs'
 
 const getSnapshotBlobKey = () =>
@@ -16,6 +17,7 @@ const getSnapshotBlobKey = () =>
 
 async function main() {
   const sandbox = await createSandbox({
+    timeoutInMilliseconds: SANDBOX_CREATING_TIMEOUT,
     onProgress: ({ progress, message }) => {
       const pct = Math.round(progress * 100)
       console.log(`[create-snapshot] ${message} (${pct}%)`)

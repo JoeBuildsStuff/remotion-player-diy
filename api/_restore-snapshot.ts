@@ -1,7 +1,7 @@
 import { get } from '@vercel/blob'
 import { Sandbox } from '@vercel/sandbox'
 
-const SANDBOX_CREATING_TIMEOUT = 5 * 60 * 1000
+import { SANDBOX_CREATING_TIMEOUT } from './sandbox-config.js'
 
 const getSnapshotBlobKey = () =>
   `snapshot-cache/${process.env.VERCEL_DEPLOYMENT_ID ?? 'local'}.json`
