@@ -6,7 +6,7 @@
 // package.json so a snapshot is created on every deploy.
 
 import { addBundleToSandbox, createSandbox } from '@remotion/vercel'
-import { put } from '@vercel/blob'
+import { del, list, put } from '@vercel/blob'
 
 import { bundleRemotionProject } from './api/_render-helpers'
 import { BUILD_DIR } from './build-dir.mjs'
@@ -40,6 +40,19 @@ async function main() {
   console.log(
     `[create-snapshot] Snapshot saved: ${snapshotId} (key=${getSnapshotBlobKey()})`,
   )
+
+  // Delete every other snapshot-cache entry — they reference dead deployments.
+  // Sandbox snapshots themselves are billed separately; we can't delete them
+  // through @vercel/sandbox today, but Vercel garbage-collects unreferenced
+  // snapshots over time and removing the JSON pointers is enough to keep the
+  // Blob store tidy.
+  const currentKey = getSnapshotBlobKey()
+  const { blobs } = await list({ prefix: 'snapshot-cache/' })
+  const stale = blobs.filter((b) => b.pathname !== currentKey)
+  if (stale.length) {
+    await del(stale.map((b) => b.url))
+    console.log(`[create-snapshot] Deleted ${stale.length} stale snapshot-cache entries`)
+  }
 }
 
 main().catch((err) => {
