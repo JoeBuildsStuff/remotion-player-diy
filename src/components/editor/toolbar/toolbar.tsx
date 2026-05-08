@@ -26,6 +26,7 @@ import {
 import { useEditor } from '../model/editor-context-value'
 import { ProjectInfoButton } from './project-info-button'
 import { RenderDialog } from './render-dialog'
+import { ThemeToggle } from './theme-toggle'
 
 export function Toolbar() {
   const {
@@ -260,6 +261,7 @@ export function Toolbar() {
         </ButtonGroup>
 
         <ProjectInfoButton />
+        <ThemeToggle />
       </div>
 
       <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />

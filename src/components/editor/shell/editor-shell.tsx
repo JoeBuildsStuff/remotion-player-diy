@@ -6,7 +6,7 @@ import { TransportBar } from '../transport/transport-bar'
 
 export function EditorShell() {
   return (
-    <div className="dark flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
       <Toolbar />
       <div className="flex min-h-0 flex-1">
         <Preview />

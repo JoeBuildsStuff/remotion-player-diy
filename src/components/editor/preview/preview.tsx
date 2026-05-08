@@ -72,7 +72,7 @@ export function Preview() {
   return (
     <div
       ref={previewRef}
-      className="relative flex min-w-0 flex-1 overflow-auto bg-secondary/40 p-4"
+      className="relative flex min-w-0 flex-1 overflow-auto bg-secondary dark:bg-secondary/40 p-4"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -88,7 +88,7 @@ export function Preview() {
     >
       <div
         ref={fullscreenElementRef}
-        className="relative m-auto flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl fullscreen:bg-background fullscreen:shadow-none"
+        className="relative m-auto flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background fullscreen:bg-background"
         style={{
           width: isFullscreen
             ? `min(100vw, ${(width / height) * 100}vh)`
