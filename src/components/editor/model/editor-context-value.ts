@@ -3,11 +3,18 @@ import type { PlayerRef } from '@remotion/player'
 
 import type { Clip } from './editor-types'
 
+export type ExportSettings = {
+  quality: number
+  audioBitrateKbps: number
+  resolutionScale: number
+}
+
 export type EditorState = {
   fps: number
   width: number
   height: number
   volume: number
+  exportSettings: ExportSettings
   clips: Clip[]
   durationInFrames: number
   currentFrame: number
@@ -19,6 +26,7 @@ export type EditorState = {
   selectedClipId: string | null
   setSelectedClipId: (id: string | null) => void
   setVolume: (v: number) => void
+  setExportSettings: (settings: ExportSettings) => void
   setWidth: (v: number) => void
   setHeight: (v: number) => void
   setCurrentFrame: (f: number) => void

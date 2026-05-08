@@ -14,6 +14,12 @@ import { restoreSnapshot } from './_restore-snapshot.js'
 
 const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
 
+const ExportSettingsSchema = z.object({
+  quality: z.number().min(1).max(100),
+  audioBitrateKbps: z.number().int().min(64).max(320),
+  resolutionScale: z.number().int().min(25).max(100),
+})
+
 // Strict request validator. The client must replace `src` with the Blob
 // remoteSrc before posting — render-side has no way to read browser blob: URLs.
 const RenderRequestSchema = z.object({
@@ -24,7 +30,14 @@ const RenderRequestSchema = z.object({
     height: z.number().int().positive(),
     durationInFrames: z.number().int().positive(),
   }),
+  exportSettings: ExportSettingsSchema,
 })
+
+function qualityToCrf(quality: number) {
+  // Remotion forwards CRF to x264: lower is higher quality/larger file.
+  // 70 maps near CRF 23, a good default for web MP4 exports.
+  return Math.round(36 - quality * 0.18)
+}
 
 function unauthorized() {
   return new Response('Unauthorized', { status: 401 })
@@ -94,6 +107,10 @@ export async function POST(request: Request): Promise<Response> {
           sandbox,
           compositionId: COMP_NAME,
           inputProps: body.inputProps,
+          codec: 'h264',
+          crf: qualityToCrf(body.exportSettings.quality),
+          audioBitrate: `${body.exportSettings.audioBitrateKbps}K`,
+          scale: body.exportSettings.resolutionScale / 100,
           onProgress: async (update) => {
             switch (update.stage) {
               case 'opening-browser':
