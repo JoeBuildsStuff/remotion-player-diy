@@ -1,19 +1,19 @@
-// Builds a Remotion bundle and creates a Vercel Sandbox snapshot containing
-// it, then writes the snapshot ID to Vercel Blob. The /api/render endpoint
-// loads the snapshot at request time so cold renders skip `npm install`.
+// Creates a Vercel Sandbox snapshot containing the installed Node modules
+// (no Remotion bundle), then writes the snapshot ID + creation time to Vercel
+// Blob. The /api/render endpoint loads the snapshot at request time so cold
+// renders skip `npm install`. The bundle itself is pushed fresh on every
+// render to avoid drift between snapshot and deployed code.
 //
 // Run via `pnpm create-snapshot` when the render sandbox image needs to be
-// refreshed. Normal app deploys do not depend on this snapshot step.
+// refreshed (e.g. dependency upgrades). Normal app deploys do not depend on
+// this snapshot step.
 
-import { addBundleToSandbox, createSandbox } from '@remotion/vercel'
+import { createSandbox } from '@remotion/vercel'
+import { Snapshot } from '@vercel/sandbox'
 import { del, list, put } from '@vercel/blob'
 
-import { bundleRemotionProject } from './api/_render-helpers'
-import { SANDBOX_CREATING_TIMEOUT } from './api/sandbox-config'
-import { BUILD_DIR } from './build-dir.mjs'
-
-const getSnapshotBlobKey = () =>
-  `snapshot-cache/${process.env.VERCEL_DEPLOYMENT_ID ?? 'local'}.json`
+import { SANDBOX_CREATING_TIMEOUT, SNAPSHOT_EXPIRATION_MS } from './api/sandbox-config'
+import { getSnapshotBlobKey, type SnapshotPointer } from './api/snapshot-pointer'
 
 async function main() {
   const sandbox = await createSandbox({
@@ -24,15 +24,20 @@ async function main() {
     },
   })
 
-  console.log('[create-snapshot] Bundling Remotion project...')
-  bundleRemotionProject(BUILD_DIR)
-  await addBundleToSandbox({ sandbox, bundleDir: BUILD_DIR })
+  const key = getSnapshotBlobKey()
+
+  const previousPointer = await readPreviousPointer(key)
 
   console.log('[create-snapshot] Taking snapshot...')
-  const snapshot = await sandbox.snapshot({ expiration: 0 })
+  const snapshot = await sandbox.snapshot({ expiration: SNAPSHOT_EXPIRATION_MS })
   const { snapshotId } = snapshot
 
-  await put(getSnapshotBlobKey(), JSON.stringify({ snapshotId }), {
+  const pointer: SnapshotPointer = {
+    snapshotId,
+    createdAt: new Date().toISOString(),
+  }
+
+  await put(key, JSON.stringify(pointer), {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
@@ -40,21 +45,51 @@ async function main() {
   })
 
   console.log(
-    `[create-snapshot] Snapshot saved: ${snapshotId} (key=${getSnapshotBlobKey()})`,
+    `[create-snapshot] Snapshot saved: ${snapshotId} (key=${key}, expires in ${SNAPSHOT_EXPIRATION_MS / 86_400_000}d)`,
   )
 
-  // Delete every other snapshot-cache entry — they reference dead deployments.
-  // Sandbox snapshots themselves are billed separately; we can't delete them
-  // through @vercel/sandbox today, but Vercel garbage-collects unreferenced
-  // snapshots over time and removing the JSON pointers is enough to keep the
-  // Blob store tidy.
-  const currentKey = getSnapshotBlobKey()
+  await deletePreviousSnapshot(previousPointer, snapshotId)
+  await deleteStalePointers(key)
+}
+
+async function readPreviousPointer(key: string): Promise<SnapshotPointer | null> {
+  const { blobs } = await list({ prefix: key })
+  const existing = blobs.find((b) => b.pathname === key)
+  if (!existing) return null
+  try {
+    const res = await fetch(existing.url)
+    if (!res.ok) return null
+    return (await res.json()) as SnapshotPointer
+  } catch (err) {
+    console.warn('[create-snapshot] Failed to read previous pointer:', err)
+    return null
+  }
+}
+
+async function deletePreviousSnapshot(
+  previous: SnapshotPointer | null,
+  newSnapshotId: string,
+) {
+  if (!previous?.snapshotId) return
+  if (previous.snapshotId === newSnapshotId) return
+  try {
+    const snapshot = await Snapshot.get({ snapshotId: previous.snapshotId })
+    await snapshot.delete()
+    console.log(`[create-snapshot] Deleted previous snapshot ${previous.snapshotId}`)
+  } catch (err) {
+    console.warn(
+      `[create-snapshot] Failed to delete previous snapshot ${previous.snapshotId}:`,
+      err,
+    )
+  }
+}
+
+async function deleteStalePointers(currentKey: string) {
   const { blobs } = await list({ prefix: 'snapshot-cache/' })
   const stale = blobs.filter((b) => b.pathname !== currentKey)
-  if (stale.length) {
-    await del(stale.map((b) => b.url))
-    console.log(`[create-snapshot] Deleted ${stale.length} stale snapshot-cache entries`)
-  }
+  if (!stale.length) return
+  await del(stale.map((b) => b.url))
+  console.log(`[create-snapshot] Deleted ${stale.length} stale snapshot-cache pointer(s)`)
 }
 
 main().catch((err) => {
