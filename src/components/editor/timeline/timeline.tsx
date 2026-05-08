@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core'
 
 import { useEditor } from '../model/editor-context-value'
+import { timelineClipColorClass } from '../model/clip-colors'
 import type { Clip } from '../model/editor-types'
 import { TimelineClip } from './timeline-clip'
 import {
@@ -250,14 +251,7 @@ export function Timeline() {
                       const canResizeEnd =
                         clip.durationInFrames > MIN_CLIP_FRAMES ||
                         clipSourceEnd(clip) < clip.sourceDurationInFrames
-                      const color =
-                        clip.type === 'video'
-                          ? 'bg-editor-selection-fill border-editor-selection-border'
-                          : clip.type === 'audio'
-                            ? 'bg-secondary border-border'
-                            : clip.type === 'text'
-                              ? 'bg-primary/15 border-primary/40'
-                              : 'bg-muted border-border'
+                      const color = timelineClipColorClass(clip.type)
                       const isSelected = selectedClipId === clip.id
                       const isHidden = clip.visible === false
 

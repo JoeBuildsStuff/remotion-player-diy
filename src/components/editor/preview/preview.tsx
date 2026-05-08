@@ -16,6 +16,7 @@ export function Preview() {
     volume,
     isLooping,
     previewZoom,
+    fullscreenElementRef,
     selectedClipId,
     setSelectedClipId,
     addFiles,
@@ -24,6 +25,7 @@ export function Preview() {
     setIsPlaying,
   } = useEditor()
   const [isDragging, setDragging] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const previewRef = useRef<HTMLDivElement | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
 
@@ -47,6 +49,17 @@ export function Preview() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [height, width])
+
+  useLayoutEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === fullscreenElementRef.current)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [fullscreenElementRef])
 
   usePreviewPlayerEvents({
     clipsLength: clips.length,
@@ -74,10 +87,15 @@ export function Preview() {
       }}
     >
       <div
-        className="relative m-auto flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl"
+        ref={fullscreenElementRef}
+        className="relative m-auto flex cursor-pointer items-center justify-center overflow-visible rounded-md bg-background shadow-2xl fullscreen:bg-background fullscreen:shadow-none"
         style={{
-          width: canvasSize.width * previewZoom,
-          height: canvasSize.height * previewZoom,
+          width: isFullscreen
+            ? `min(100vw, ${(width / height) * 100}vh)`
+            : canvasSize.width * previewZoom,
+          height: isFullscreen
+            ? `min(100vh, ${(height / width) * 100}vw)`
+            : canvasSize.height * previewZoom,
         }}
       >
         {clips.length === 0 ? (
@@ -108,9 +126,7 @@ export function Preview() {
           />
         )}
         {isDragging && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-ring bg-ring/10 text-sm text-foreground">
-            Drop to add to timeline
-          </div>
+          <div className="pointer-events-none absolute inset-0 border-2 border-dashed border-editor-selection" />
         )}
       </div>
     </div>

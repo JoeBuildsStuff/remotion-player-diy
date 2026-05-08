@@ -23,6 +23,7 @@ export type EditorState = {
   timelineZoom: number
   previewZoom: number
   playerRef: React.RefObject<PlayerRef | null>
+  fullscreenElementRef: React.RefObject<HTMLDivElement | null>
   selectedClipId: string | null
   setSelectedClipId: (id: string | null) => void
   setVolume: (v: number) => void

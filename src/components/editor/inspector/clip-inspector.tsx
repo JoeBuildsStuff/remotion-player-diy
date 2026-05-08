@@ -211,7 +211,6 @@ export function ClipInspector({ clip }: Props) {
     height: canvasHeight,
     updateClip,
   } = useEditor()
-  const fakeBytes = 63 * 1024 * 1024
   const [lockAspectRatio, setLockAspectRatio] = useState(false)
 
   const horizontalAlignment = useMemo(() => {
@@ -348,10 +347,12 @@ export function ClipInspector({ clip }: Props) {
               <p className="font-mono text-xs text-muted-foreground">
                 {formatClipDuration(clip.durationInFrames, fps)}
               </p>
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Cloud className="h-3.5 w-3.5" />
-                {formatBytes(fakeBytes)}
-              </p>
+              {clip.sourceFileSizeBytes != null && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Cloud className="h-3.5 w-3.5" />
+                  {formatBytes(clip.sourceFileSizeBytes)}
+                </p>
+              )}
             </div>
           </Section>
 

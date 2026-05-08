@@ -20,9 +20,8 @@ These controls are visible but not fully wired:
 
 - Snap toggle.
 - Global volume button.
-- Fullscreen button.
 
-Timeline zoom, split, delete selected item, seek, play/pause, jump to start/end, and loop are wired.
+Timeline zoom, split, delete selected item, seek, play/pause, jump to start/end, loop, and fullscreen playback are wired.
 
 ## Project Persistence
 
@@ -41,10 +40,6 @@ The clip model supports media and text clips. The rectangle button is present in
 ## Captions
 
 The video clip inspector has a Captions section placeholder. Caption import, editing, timing, and rendering are not implemented yet.
-
-## Source File Metadata
-
-The media clip Source section currently displays a placeholder file size value. File size should be connected to imported file metadata if it needs to be accurate.
 
 ## Export Requirements
 

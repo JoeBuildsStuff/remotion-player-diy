@@ -269,7 +269,7 @@ export function CanvasInspector({
             <SelectItem value="mp4">MP4 (H.264)</SelectItem>
           </SelectContent>
         </Select>
-        <div className="space-y-3 rounded-md border border-border bg-secondary/20 p-2">
+        <div className="space-y-3 p-2">
           <SliderRow
             label="Resolution"
             value={exportSettings.resolutionScale}
