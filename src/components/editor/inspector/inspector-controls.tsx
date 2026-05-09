@@ -1,5 +1,6 @@
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
+import type { LucideIcon } from 'lucide-react'
 import {
   AccordionContent,
   AccordionItem,
@@ -9,11 +10,13 @@ import {
 export function Section({
   value,
   title,
+  icon: Icon,
   children,
   last,
 }: {
   value: string
   title: string
+  icon?: LucideIcon
   children: React.ReactNode
   last?: boolean
 }) {
@@ -23,7 +26,10 @@ export function Section({
       className={`min-w-0 border-muted-foreground/20 data-open:bg-transparent ${last ? 'border-b' : ''}`}
     >
       <AccordionTrigger className="text-xs font-semibold text-foreground hover:no-underline">
-        {title}
+        <span className="flex min-w-0 items-center gap-2">
+          {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+          <span className="truncate">{title}</span>
+        </span>
       </AccordionTrigger>
       <AccordionContent className="min-w-0 px-1">{children}</AccordionContent>
     </AccordionItem>

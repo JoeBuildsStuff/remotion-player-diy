@@ -11,11 +11,22 @@ import {
   AlignEndVertical,
   AlignStartHorizontal,
   AlignStartVertical,
+  Captions,
+  Clapperboard,
   Cloud,
+  Clock3,
+  Crop,
   DraftingCompass,
+  FileVideo,
   Link2,
+  PaintBucket,
+  PanelTop,
+  PenLine,
   RotateCw,
+  Square,
+  Type,
   Squircle,
+  Volume2,
 } from 'lucide-react'
 
 import { Accordion } from '@/components/ui/accordion'
@@ -339,7 +350,7 @@ export function ClipInspector({ clip }: Props) {
           defaultValue={['source', 'timing', 'layout', 'fill', 'crop', 'video', 'audio']}
           className="min-w-0 rounded-none border-0"
         >
-          <Section value="source" title="Source">
+          <Section value="source" title="Source" icon={FileVideo}>
             <div className="min-w-0 space-y-1">
               <p className="w-full min-w-0 truncate text-xs text-foreground" title={clip.name}>
                 {clip.name}
@@ -356,7 +367,7 @@ export function ClipInspector({ clip }: Props) {
             </div>
           </Section>
 
-        <Section value="timing" title="Timing">
+        <Section value="timing" title="Timing" icon={Clock3}>
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Timeline</Label>
@@ -458,7 +469,7 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="layout" title="Layout">
+        <Section value="layout" title="Layout" icon={PanelTop}>
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Alignment</Label>
@@ -627,7 +638,7 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="fill" title="Fill">
+        <Section value="fill" title="Fill" icon={PaintBucket}>
           <div className="space-y-3">
             <SliderRow
               label="Opacity"
@@ -657,7 +668,7 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="crop" title="Crop">
+        <Section value="crop" title="Crop" icon={Crop}>
           <div className="space-y-3">
             <SliderRow
               label="Left"
@@ -699,7 +710,7 @@ export function ClipInspector({ clip }: Props) {
         </Section>
 
         {clip.type === 'video' && (
-          <Section value="video" title="Video">
+          <Section value="video" title="Video" icon={Clapperboard}>
             <div className="space-y-3">
               <SliderRow
                 label="Playback Rate"
@@ -735,7 +746,7 @@ export function ClipInspector({ clip }: Props) {
         )}
 
         {(clip.type === 'video' || clip.type === 'audio') && (
-          <Section value="audio" title="Audio">
+          <Section value="audio" title="Audio" icon={Volume2}>
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <Label className="text-xs text-muted-foreground">Muted</Label>
@@ -779,7 +790,7 @@ export function ClipInspector({ clip }: Props) {
         )}
 
         {clip.type === 'video' && (
-          <Section value="captions" title="Captions" last>
+          <Section value="captions" title="Captions" icon={Captions} last>
             <p className="text-xs text-muted-foreground">No captions yet.</p>
           </Section>
         )}
@@ -834,7 +845,7 @@ function TextClipInspector({
           defaultValue={['layout', 'typography', 'fill', 'stroke', 'background', 'fade']}
           className="min-w-0 rounded-none border-0"
         >
-          <Section value="layout" title="Layout">
+          <Section value="layout" title="Layout" icon={PanelTop}>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Alignment</Label>
@@ -985,7 +996,7 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="typography" title="Typography">
+          <Section value="typography" title="Typography" icon={Type}>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Font</Label>
@@ -1126,7 +1137,7 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="fill" title="Fill">
+          <Section value="fill" title="Fill" icon={PaintBucket}>
             <div className="space-y-3">
               <SliderRow
                 label="Opacity"
@@ -1143,7 +1154,7 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="stroke" title="Stroke">
+          <Section value="stroke" title="Stroke" icon={PenLine}>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Width</Label>
@@ -1171,7 +1182,7 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="background" title="Background">
+          <Section value="background" title="Background" icon={Square}>
             <div className="space-y-3">
               <ColorInput
                 label="Color"
@@ -1223,7 +1234,7 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="fade" title="Fade" last>
+          <Section value="fade" title="Fade" icon={Clock3} last>
             <div className="space-y-3">
               <SliderRow
                 label="Fade In"
