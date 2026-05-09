@@ -221,8 +221,8 @@ export function Timeline() {
 
   return (
     <div
-      className="flex shrink-0 border-t border-border bg-background"
-      style={{ height: Math.max(minTimelineHeight, timelineHeight) }}
+      className="flex min-h-0 flex-1 border-t border-border bg-background"
+      style={{ minHeight: minTimelineHeight }}
     >
       <TimelineTrackHeaders
         clips={clips}
@@ -241,11 +241,14 @@ export function Timeline() {
         <div
           ref={trackAreaRef}
           onClick={handleSeek}
-          className="relative h-full flex-1 cursor-pointer overflow-x-auto overflow-y-hidden"
+          className="relative h-full flex-1 cursor-pointer overflow-auto"
         >
           <div
-            className="relative h-full min-w-full"
-            style={{ width: Math.max(trackWidth, 1) }}
+            className="relative min-w-full"
+            style={{
+              width: Math.max(trackWidth, 1),
+              height: Math.max(timelineHeight, minTimelineHeight),
+            }}
           >
             <TimelineRuler tickCount={tickCount} pxPerSecond={pxPerSecond} />
 
