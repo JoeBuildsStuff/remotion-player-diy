@@ -24,7 +24,7 @@ HTTP request ─► Node (Hono) on :3000
 
 ## Quickstart with the prebuilt image
 
-The `master` branch publishes to GHCR as `ghcr.io/joebuildsstuff/remotion-player-diy:latest` (plus an immutable `sha-<commit>` tag).
+The `main` branch publishes to GHCR as `ghcr.io/joebuildsstuff/remotion-player-diy:latest` (plus an immutable `sha-<commit>` tag).
 
 ```bash
 # 1. Pick two long random strings.
