@@ -125,7 +125,7 @@ export function CanvasInspector({
   }, [height, selectedCanvasPresetId, width])
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-4 border-l p-3">
+    <aside className="flex w-72 shrink-0 flex-col gap-4 border-r p-3">
       <section className="space-y-2">
         <Label className="">Canvas</Label>
         <Select

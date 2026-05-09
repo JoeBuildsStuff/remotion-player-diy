@@ -39,7 +39,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [isLooping, setIsLooping] = useState(false)
   const [timelineZoom, setTimelineZoom] = useState(1)
   const [previewZoom, setPreviewZoom] = useState(1)
-  const [showCanvasRulers, setShowCanvasRulers] = useState(true)
+  const [showCanvasRulers, setShowCanvasRulers] = useState(false)
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
 
   const durationInFrames = useMemo(
