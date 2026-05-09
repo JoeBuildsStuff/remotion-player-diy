@@ -23,6 +23,14 @@ export function clipColorVars(type: ClipType): ClipColorVars {
     }
   }
 
+  if (type === 'text') {
+    return {
+      color: 'var(--editor-text)',
+      fill: 'var(--editor-text-fill)',
+      border: 'var(--editor-text-border)',
+    }
+  }
+
   return {
     color: 'var(--editor-selection)',
     fill: 'var(--editor-selection-fill)',
@@ -33,6 +41,6 @@ export function clipColorVars(type: ClipType): ClipColorVars {
 export function timelineClipColorClass(type: ClipType): string {
   if (type === 'audio') return 'bg-editor-audio-fill border-editor-audio-border'
   if (type === 'image') return 'bg-editor-image-fill border-editor-image-border'
-  if (type === 'text') return 'bg-primary/15 border-primary/40'
+  if (type === 'text') return 'bg-editor-text-fill border-editor-text-border'
   return 'bg-editor-selection-fill border-editor-selection-border'
 }

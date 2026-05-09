@@ -264,6 +264,7 @@ export function Timeline() {
                           isHidden={isHidden}
                           left={left}
                           width={width}
+                          fps={fps}
                           canResizeStart={canResizeStart}
                           canResizeEnd={canResizeEnd}
                           setSelectedClipId={setSelectedClipId}

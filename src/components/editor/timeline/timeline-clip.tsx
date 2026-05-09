@@ -1,11 +1,22 @@
 import { useDraggable } from '@dnd-kit/core'
 
+import { Badge } from '@/components/ui/badge'
+
 import type { Clip } from '../model/editor-types'
 import { AudioWaveform } from './audio-waveform'
 import {
   timelineClipDndId,
   translateStyle,
 } from './timeline-geometry'
+import { VideoStillStrip } from './video-still-strip'
+
+function timelineClipBadgeVariant(type: Clip['type']) {
+  if (type === 'video') return 'blue'
+  if (type === 'audio') return 'green'
+  if (type === 'image') return 'purple'
+  if (type === 'text') return 'amber'
+  return 'secondary'
+}
 
 export function TimelineClip({
   clip,
@@ -14,6 +25,7 @@ export function TimelineClip({
   isHidden,
   left,
   width,
+  fps,
   canResizeStart,
   canResizeEnd,
   setSelectedClipId,
@@ -27,6 +39,7 @@ export function TimelineClip({
   isHidden: boolean
   left: number
   width: number
+  fps: number
   canResizeStart: boolean
   canResizeEnd: boolean
   setSelectedClipId: (id: string | null) => void
@@ -50,7 +63,9 @@ export function TimelineClip({
       ? 'ring-editor-audio'
       : clip.type === 'image'
         ? 'ring-editor-image'
-        : 'ring-editor-selection'
+        : clip.type === 'text'
+          ? 'ring-editor-text'
+          : 'ring-editor-selection'
 
   return (
     <div
@@ -68,7 +83,7 @@ export function TimelineClip({
         e.stopPropagation()
         setSelectedClipId(clip.id)
       }}
-      className={`group absolute top-1 bottom-1 touch-none select-none overflow-hidden rounded-sm border px-1.5 text-[10px] text-foreground shadow-sm ${
+      className={`group absolute top-1 bottom-1 flex touch-none select-none items-center overflow-hidden rounded-sm border px-1.5 text-[10px] text-foreground shadow-sm ${
         isHidden ? 'opacity-45' : ''
       } ${color} ${
         isSelected ? `ring-2 ${selectionRing} ring-offset-1 ring-offset-background` : ''
@@ -95,18 +110,22 @@ export function TimelineClip({
         onPointerDown={(e) => startClipResize(e, clip, 'start')}
       />
       {clip.type === 'audio' && clip.src && width > 0 ? (
-        <AudioWaveform src={clip.src} width={width} height={28} />
+        <AudioWaveform
+          src={clip.src}
+          width={width}
+          height={28}
+          color="var(--editor-audio)"
+        />
       ) : null}
-      <span
-        className={`relative block truncate leading-9 ${
-          clip.type === 'image'
-            ? 'rounded-sm bg-background/60 px-1 text-foreground backdrop-blur-[2px]'
-            : ''
-        } ${clip.type === 'audio' ? 'rounded-sm bg-background/60 px-1 text-foreground' : ''}`}
-        style={clip.type === 'image' || clip.type === 'audio' ? { display: 'inline-block' } : undefined}
+      {clip.type === 'video' && clip.src && width > 0 ? (
+        <VideoStillStrip clip={clip} fps={fps} width={width} />
+      ) : null}
+      <Badge
+        variant={timelineClipBadgeVariant(clip.type)}
+        className="relative z-[1] max-w-full justify-start truncate px-1 text-[10px] shadow-sm backdrop-blur-[2px]"
       >
         {clip.name}
-      </span>
+      </Badge>
       <TimelineResizeHandle
         side="end"
         disabled={!canResizeEnd}
