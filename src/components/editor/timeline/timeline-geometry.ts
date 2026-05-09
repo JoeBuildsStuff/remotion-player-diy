@@ -3,7 +3,10 @@ import { clamp } from '../model/time'
 
 export const BASE_PX_PER_SECOND = 60
 export const RULER_HEIGHT = 24
-export const TRACK_HEIGHT = 44
+export const TRACK_HEIGHT = 40
+export const CLIP_VERTICAL_INSET = 4
+export const VIDEO_CLIP_VERTICAL_INSET = 2
+export const COMPACT_CLIP_HEIGHT = 26
 export const MIN_CLIP_FRAMES = 1
 
 const TIMELINE_CLIP_ID_PREFIX = 'item-'
