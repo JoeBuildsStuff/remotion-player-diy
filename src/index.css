@@ -28,7 +28,7 @@
   --editor-selection-border: oklch(0.707 0.165 254.624);
   --editor-audio: oklch(0.627 0.194 149.214);
   --editor-audio-fill: oklch(0.627 0.194 149.214 / 35%);
-  --editor-audio-border: oklch(0.723 0.219 149.579);
+  --editor-audio-border: oklch(0.627 0.194 149.214);
   --editor-image: oklch(0.558 0.288 302.321);
   --editor-image-fill: oklch(0.558 0.288 302.321 / 35%);
   --editor-image-border: oklch(0.627 0.265 303.9);
