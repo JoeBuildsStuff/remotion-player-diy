@@ -18,6 +18,7 @@ export function Preview() {
     volume,
     isLooping,
     previewZoom,
+    showCanvasRulers,
     fullscreenElementRef,
     selectedClipId,
     setSelectedClipId,
@@ -33,14 +34,15 @@ export function Preview() {
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 })
   const [canvasOrigin, setCanvasOrigin] = useState({ x: 0, y: 0 })
+  const rulerOffset = showCanvasRulers ? RULER_SIZE : 0
 
   useLayoutEffect(() => {
     const el = previewRef.current
     if (!el) return
 
     const measure = () => {
-      const availableWidth = Math.max(0, el.clientWidth - RULER_SIZE - 16)
-      const availableHeight = Math.max(0, el.clientHeight - RULER_SIZE - 16)
+      const availableWidth = Math.max(0, el.clientWidth - rulerOffset - 16)
+      const availableHeight = Math.max(0, el.clientHeight - rulerOffset - 16)
       const scale = Math.min(availableWidth / width, availableHeight / height)
 
       setCanvasSize({
@@ -57,7 +59,7 @@ export function Preview() {
     const observer = new ResizeObserver(measure)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [height, width])
+  }, [height, rulerOffset, width])
 
   useLayoutEffect(() => {
     const previewEl = previewRef.current
@@ -70,7 +72,15 @@ export function Preview() {
       x: canvasRect.left - previewRect.left,
       y: canvasRect.top - previewRect.top,
     })
-  }, [canvasSize.width, canvasSize.height, previewSize.width, previewSize.height, previewZoom, clips.length])
+  }, [
+    canvasSize.width,
+    canvasSize.height,
+    previewSize.width,
+    previewSize.height,
+    previewZoom,
+    clips.length,
+    showCanvasRulers,
+  ])
 
   useLayoutEffect(() => {
     const handleFullscreenChange = () => {
@@ -120,7 +130,7 @@ export function Preview() {
           void addFiles(e.dataTransfer.files)
         }
       }}
-      style={{ paddingLeft: RULER_SIZE, paddingTop: RULER_SIZE }}
+      style={{ paddingLeft: rulerOffset, paddingTop: rulerOffset }}
     >
       <div
         ref={(node) => {
@@ -184,17 +194,19 @@ export function Preview() {
             previewWidth={previewSize.width}
             previewHeight={previewSize.height}
           />
-          <CanvasRulers
-            previewWidth={previewSize.width}
-            previewHeight={previewSize.height}
-            canvasOriginX={canvasOrigin.x}
-            canvasOriginY={canvasOrigin.y}
-            canvasDisplayWidth={canvasDisplayWidth}
-            canvasDisplayHeight={canvasDisplayHeight}
-            compositionWidth={width}
-            compositionHeight={height}
-            onRulerPointerDown={guides.startCreateFromRuler}
-          />
+          {showCanvasRulers ? (
+            <CanvasRulers
+              previewWidth={previewSize.width}
+              previewHeight={previewSize.height}
+              canvasOriginX={canvasOrigin.x}
+              canvasOriginY={canvasOrigin.y}
+              canvasDisplayWidth={canvasDisplayWidth}
+              canvasDisplayHeight={canvasDisplayHeight}
+              compositionWidth={width}
+              compositionHeight={height}
+              onRulerPointerDown={guides.startCreateFromRuler}
+            />
+          ) : null}
         </>
       ) : null}
     </div>

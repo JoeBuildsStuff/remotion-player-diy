@@ -22,6 +22,7 @@ export type EditorState = {
   isLooping: boolean
   timelineZoom: number
   previewZoom: number
+  showCanvasRulers: boolean
   playerRef: React.RefObject<PlayerRef | null>
   fullscreenElementRef: React.RefObject<HTMLDivElement | null>
   selectedClipId: string | null
@@ -40,6 +41,8 @@ export type EditorState = {
   zoomPreviewIn: () => void
   zoomPreviewOut: () => void
   resetPreviewZoom: () => void
+  setShowCanvasRulers: (v: boolean) => void
+  toggleCanvasRulers: () => void
   addFiles: (files: FileList | File[]) => Promise<void>
   addTextClip: () => void
   updateClip: (id: string, patch: Partial<Clip>) => void

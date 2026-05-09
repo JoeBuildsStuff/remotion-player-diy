@@ -39,6 +39,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [isLooping, setIsLooping] = useState(false)
   const [timelineZoom, setTimelineZoom] = useState(1)
   const [previewZoom, setPreviewZoom] = useState(1)
+  const [showCanvasRulers, setShowCanvasRulers] = useState(true)
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
 
   const durationInFrames = useMemo(
@@ -223,6 +224,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setPreviewZoom(1)
   }, [])
 
+  const toggleCanvasRulers = useCallback(() => {
+    setShowCanvasRulers((prev) => !prev)
+  }, [])
+
   const value: EditorState = useMemo(
     () => ({
       fps: FPS,
@@ -237,6 +242,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       isLooping,
       timelineZoom,
       previewZoom,
+      showCanvasRulers,
       playerRef,
       fullscreenElementRef,
       selectedClipId,
@@ -255,6 +261,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       zoomPreviewIn,
       zoomPreviewOut,
       resetPreviewZoom,
+      setShowCanvasRulers,
+      toggleCanvasRulers,
       addFiles,
       addTextClip,
       updateClip,
@@ -284,9 +292,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       resetTimelineZoom,
       seekTo,
       selectedClipId,
+      showCanvasRulers,
       splitClip,
       timelineZoom,
       togglePlay,
+      toggleCanvasRulers,
       updateClip,
       updateTimelineZoom,
       volume,

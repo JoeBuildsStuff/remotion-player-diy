@@ -13,6 +13,7 @@ import {
   Undo2,
   Upload,
   Video,
+  Ruler,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,8 @@ export function Toolbar() {
     addTextClip,
     previewZoom,
     resetPreviewZoom,
+    showCanvasRulers,
+    toggleCanvasRulers,
     zoomPreviewIn,
     zoomPreviewOut,
   } = useEditor()
@@ -95,6 +98,24 @@ export function Toolbar() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Text</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                type="button"
+                aria-pressed={showCanvasRulers}
+                aria-label={showCanvasRulers ? 'Hide rulers' : 'Show rulers'}
+                onClick={toggleCanvasRulers}
+                className="h-7 w-7 aria-pressed:bg-muted aria-pressed:text-foreground"
+              >
+                <Ruler className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {showCanvasRulers ? 'Hide rulers' : 'Show rulers'}
+            </TooltipContent>
           </Tooltip>
         </ButtonGroup>
 
