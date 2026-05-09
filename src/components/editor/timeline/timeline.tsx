@@ -28,6 +28,10 @@ import {
   type ActiveTimelineDrag,
   type TimelineDrag,
 } from './timeline-geometry'
+import {
+  beginTimelineInteraction,
+  endTimelineInteraction,
+} from './timeline-interaction'
 import { TimelineRuler } from './timeline-ruler'
 import { TimelineTrack } from './timeline-track'
 import { TimelineTrackHeaders } from './timeline-track-header'
@@ -47,6 +51,7 @@ export function Timeline() {
   } = useEditor()
   const trackAreaRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<TimelineDrag | null>(null)
+  const dragInteractionRef = useRef(false)
   const [activeDrag, setActiveDrag] = useState<ActiveTimelineDrag | null>(null)
   const [dragTrackIndexes, setDragTrackIndexes] = useState<number[] | null>(
     null,
@@ -105,6 +110,7 @@ export function Timeline() {
       startTrimAfterFrames: clip.trimAfterFrames,
       sourceDurationInFrames: clip.sourceDurationInFrames,
     }
+    beginTimelineInteraction()
   }
 
   const handleClipResize = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -127,6 +133,7 @@ export function Timeline() {
     if (!drag || drag.pointerId !== e.pointerId) return
     dragRef.current = null
     setDragTrackIndexes(null)
+    endTimelineInteraction()
   }
 
   const handleDragStart = ({ active }: DragStartEvent) => {
@@ -145,11 +152,17 @@ export function Timeline() {
       tracks,
     })
     setDragTrackIndexes(dragTrackIndexesFor(tracks))
+    dragInteractionRef.current = true
+    beginTimelineInteraction()
   }
 
   const resetDragState = () => {
     setActiveDrag(null)
     setDragTrackIndexes(null)
+    if (dragInteractionRef.current) {
+      dragInteractionRef.current = false
+      endTimelineInteraction()
+    }
   }
 
   const handleDragEnd = ({ active, delta, over }: DragEndEvent) => {
