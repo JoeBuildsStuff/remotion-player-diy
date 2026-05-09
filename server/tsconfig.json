@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "outDir": "../server-dist",
+    "rootDir": "..",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true,
+    "jsx": "preserve"
+  },
+  "include": [
+    "./**/*.ts",
+    "../shared/**/*.ts",
+    "../remotion/constants.ts",
+    "../remotion/schema.ts"
+  ],
+  "exclude": [
+    "../node_modules",
+    "../dist",
+    "../server-dist",
+    "../remotion/Root.tsx",
+    "../remotion/index.ts"
+  ]
+}

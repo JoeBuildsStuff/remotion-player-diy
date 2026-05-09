@@ -1,0 +1,34 @@
+# Generic self-hosting compose. Copy to docker-compose.yml, edit, and
+# `docker compose up -d`. Works with the prebuilt image from GHCR or with a
+# local `build: .` (uncomment).
+#
+# For an example overlay that adds Traefik / a public hostname / external
+# named volumes, see docs/self-hosting.md.
+
+services:
+  remotion-player:
+    image: ghcr.io/joebuildsstuff/remotion-player-diy:latest
+    # Uncomment to build locally instead of pulling:
+    # build:
+    #   context: .
+    #   args:
+    #     VITE_RENDER_SHARED_SECRET: ${VITE_RENDER_SHARED_SECRET}
+    #     VITE_DEPLOY_MODE: selfhost
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Required. The browser sends this in the x-render-secret header on
+      # /api/upload and /api/render. Must match what was baked in at image
+      # build time as VITE_RENDER_SHARED_SECRET.
+      RENDER_SHARED_SECRET: ${RENDER_SHARED_SECRET:?set RENDER_SHARED_SECRET}
+      # Required. Bearer token for GET /api/cleanup.
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET}
+      # Public origin used to build URLs for uploaded sources and renders.
+      # No trailing slash. Behind a reverse proxy this is the public URL.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+    volumes:
+      - data:/data
+
+volumes:
+  data:

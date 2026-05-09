@@ -4,7 +4,12 @@ A browser-based Remotion editor for arranging media and text clips, previewing t
 
 ![Remotion Player DIY screenshot](./public/remotion-player-editor-screenshot.png)
 
-The editor can be used locally without Vercel if you only want to build and preview content in the browser. Exporting/rendering videos is server-side because browser/client-side rendering has practical limits: long videos can be slow, memory-constrained, blocked by local `blob:` URLs, and unreliable across devices. This project's server-side render path is set up for Vercel using Vercel Blob and Vercel Sandbox.
+The editor can be used locally without Vercel if you only want to build and preview content in the browser. Exporting/rendering videos is server-side because browser/client-side rendering has practical limits: long videos can be slow, memory-constrained, blocked by local `blob:` URLs, and unreliable across devices.
+
+Two deploy paths are supported:
+
+- **Vercel (cloud).** Vercel Blob + Vercel Sandbox + Vercel Cron. See the [Server-Side Rendering on Vercel](#server-side-rendering-on-vercel) section below.
+- **Self-hosted (Docker).** Single container, local filesystem storage, `@remotion/renderer` for rendering. See [docs/self-hosting.md](./docs/self-hosting.md) and the prebuilt image at `ghcr.io/joebuildsstuff/remotion-player-diy:latest`.
 
 ## Documentation
 

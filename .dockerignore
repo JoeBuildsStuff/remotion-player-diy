@@ -1,0 +1,15 @@
+node_modules
+dist
+server-dist
+.remotion
+.git
+.github
+.gitea
+logs
+data
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage

@@ -3,14 +3,9 @@ import { execSync } from 'node:child_process'
 // Underscore-prefixed file → Vercel does not expose this as a public route,
 // but bundles it as a regular module for /api/render.ts to import.
 
-export type RenderProgress =
-  | { type: 'phase'; phase: string; progress: number; subtitle?: string }
-  | { type: 'done'; url: string; size: number }
-  | { type: 'error'; message: string }
-
-export function formatSSE(message: RenderProgress): string {
-  return `data: ${JSON.stringify(message)}\n\n`
-}
+// Re-export the SSE wire format from the shared module so the self-hosted
+// server (server/index.ts) and this Vercel function emit identical frames.
+export { formatSSE, type RenderProgress } from '../shared/sse.js'
 
 /**
  * Bundles the Remotion project to a directory using the Remotion CLI. This
