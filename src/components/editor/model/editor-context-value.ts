@@ -43,7 +43,10 @@ export type EditorState = {
   resetPreviewZoom: () => void
   setShowCanvasRulers: (v: boolean) => void
   toggleCanvasRulers: () => void
-  addFiles: (files: FileList | File[]) => Promise<void>
+  addFiles: (
+    files: FileList | File[],
+    placement?: { startFrame?: number; trackIndex?: number },
+  ) => Promise<void>
   addTextClip: () => void
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void

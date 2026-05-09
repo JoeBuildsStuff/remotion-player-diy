@@ -11,6 +11,7 @@ import {
 import { useEditor } from '../model/editor-context-value'
 import { timelineClipColorClass } from '../model/clip-colors'
 import type { Clip } from '../model/editor-types'
+import { formatFrame } from '../transport/transport-time'
 import { TimelineClip } from './timeline-clip'
 import {
   BASE_PX_PER_SECOND,
@@ -46,13 +47,25 @@ export function Timeline() {
     seekTo,
     selectedClipId,
     setSelectedClipId,
+    setCurrentFrame,
+    addFiles,
     removeClip,
     updateClip,
   } = useEditor()
   const trackAreaRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<TimelineDrag | null>(null)
   const dragInteractionRef = useRef(false)
+  const playheadDragRef = useRef<{
+    pointerId: number
+    frame: number
+  } | null>(null)
   const [activeDrag, setActiveDrag] = useState<ActiveTimelineDrag | null>(null)
+  const [playheadDrag, setPlayheadDrag] = useState<{
+    frame: number
+    tooltipX: number
+    tooltipY: number
+  } | null>(null)
+  const [isExternalDragging, setExternalDragging] = useState(false)
   const [dragTrackIndexes, setDragTrackIndexes] = useState<number[] | null>(
     null,
   )
@@ -67,7 +80,8 @@ export function Timeline() {
   const totalSeconds = Math.max(1, durationInFrames / fps)
   const pxPerSecond = BASE_PX_PER_SECOND * timelineZoom
   const trackWidth = totalSeconds * pxPerSecond
-  const playheadLeft = (currentFrame / fps) * pxPerSecond
+  const displayFrame = playheadDrag?.frame ?? currentFrame
+  const playheadLeft = (displayFrame / fps) * pxPerSecond
   const timelineTracks = useMemo(
     () => timelineTracksFor(clips, dragTrackIndexes ?? []),
     [clips, dragTrackIndexes],
@@ -75,18 +89,102 @@ export function Timeline() {
   const timelineHeight = RULER_HEIGHT + timelineTracks.length * TRACK_HEIGHT
   const minTimelineHeight = RULER_HEIGHT + TRACK_HEIGHT * 3
 
-  const handleSeek = (e: React.MouseEvent) => {
+  const frameFromClientX = (clientX: number) => {
     const el = trackAreaRef.current
-    if (!el) return
+    if (!el) return 0
     const rect = el.getBoundingClientRect()
-    const x = e.clientX - rect.left + el.scrollLeft
+    const x = clientX - rect.left + el.scrollLeft
     const seconds = Math.max(0, x / pxPerSecond)
-    const frame = Math.min(
+    return Math.min(
       durationInFrames - 1,
       Math.max(0, Math.round(seconds * fps)),
     )
+  }
+
+  const trackIndexFromClientY = (clientY: number) => {
+    const el = trackAreaRef.current
+    if (!el) return 0
+    const rect = el.getBoundingClientRect()
+    const y = clientY - rect.top + el.scrollTop - RULER_HEIGHT
+    const row = Math.max(0, Math.floor(y / TRACK_HEIGHT))
+    const track = timelineTracks[row]
+    if (track) return track.index
+    const lastTrackIndex = timelineTracks[timelineTracks.length - 1]?.index ?? 0
+    return lastTrackIndex - (row - timelineTracks.length + 1)
+  }
+
+  const playheadTooltipPosition = (clientX: number) => {
+    const el = trackAreaRef.current
+    const top = el?.getBoundingClientRect().top ?? 0
+    return {
+      tooltipX: clientX,
+      tooltipY: top - 8,
+    }
+  }
+
+  const seekFrame = (frame: number) => {
+    setCurrentFrame(frame)
     seekTo(frame)
     setSelectedClipId(null)
+  }
+
+  const handleSeek = (e: React.MouseEvent) => {
+    if (playheadDragRef.current) return
+    seekFrame(frameFromClientX(e.clientX))
+  }
+
+  const startPlayheadDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    const frame = frameFromClientX(e.clientX)
+    playheadDragRef.current = { pointerId: e.pointerId, frame }
+    setPlayheadDrag({ frame, ...playheadTooltipPosition(e.clientX) })
+    seekFrame(frame)
+    beginTimelineInteraction()
+  }
+
+  const handlePlayheadDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = playheadDragRef.current
+    if (!drag || drag.pointerId !== e.pointerId) return
+    const frame = frameFromClientX(e.clientX)
+    drag.frame = frame
+    setPlayheadDrag({ frame, ...playheadTooltipPosition(e.clientX) })
+    seekFrame(frame)
+  }
+
+  const endPlayheadDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = playheadDragRef.current
+    if (!drag || drag.pointerId !== e.pointerId) return
+    playheadDragRef.current = null
+    setPlayheadDrag(null)
+    endTimelineInteraction()
+  }
+
+  const hasExternalFiles = (dataTransfer: React.DragEvent['dataTransfer']) =>
+    Array.from(dataTransfer.types).includes('Files')
+
+  const handleExternalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!hasExternalFiles(e.dataTransfer)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setExternalDragging(true)
+  }
+
+  const handleExternalDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setExternalDragging(false)
+    }
+  }
+
+  const handleExternalDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.files.length) return
+    e.preventDefault()
+    setExternalDragging(false)
+    const startFrame = frameFromClientX(e.clientX)
+    const trackIndex = trackIndexFromClientY(e.clientY)
+    void addFiles(e.dataTransfer.files, { startFrame, trackIndex })
   }
 
   const startClipResize = (
@@ -224,6 +322,17 @@ export function Timeline() {
       className="flex min-h-0 flex-1 border-t border-border bg-background"
       style={{ minHeight: minTimelineHeight }}
     >
+      {playheadDrag ? (
+        <div
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-md bg-editor-selection px-2 py-1 font-mono text-[10px] text-background shadow-md"
+          style={{
+            left: playheadDrag.tooltipX,
+            top: playheadDrag.tooltipY,
+          }}
+        >
+          {formatFrame(playheadDrag.frame, fps)}
+        </div>
+      ) : null}
       <TimelineTrackHeaders
         clips={clips}
         tracks={timelineTracks}
@@ -241,13 +350,17 @@ export function Timeline() {
         <div
           ref={trackAreaRef}
           onClick={handleSeek}
+          onDragOver={handleExternalDragOver}
+          onDragLeave={handleExternalDragLeave}
+          onDrop={handleExternalDrop}
           className="relative h-full flex-1 cursor-pointer overflow-auto"
         >
           <div
-            className="relative min-w-full"
+            className="relative min-h-full min-w-full"
             style={{
               width: Math.max(trackWidth, 1),
               height: Math.max(timelineHeight, minTimelineHeight),
+              minHeight: '100%',
             }}
           >
             <TimelineRuler tickCount={tickCount} pxPerSecond={pxPerSecond} />
@@ -295,11 +408,26 @@ export function Timeline() {
             </div>
 
             <div
-              className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-editor-selection"
+              className="absolute top-0 bottom-0 z-10 w-px bg-editor-selection"
               style={{ left: playheadLeft }}
             >
               <div className="absolute -left-1.5 -top-1 h-3 w-3 rotate-45 bg-editor-selection" />
+              <div
+                className="absolute -left-3 top-0 h-full w-6 cursor-ew-resize"
+                role="slider"
+                aria-label="Timeline playhead"
+                aria-valuemin={0}
+                aria-valuemax={Math.max(0, durationInFrames - 1)}
+                aria-valuenow={displayFrame}
+                onPointerDown={startPlayheadDrag}
+                onPointerMove={handlePlayheadDrag}
+                onPointerUp={endPlayheadDrag}
+                onPointerCancel={endPlayheadDrag}
+              />
             </div>
+            {isExternalDragging ? (
+              <div className="pointer-events-none absolute inset-0 z-20 border-2 border-dashed border-editor-selection bg-secondary/30" />
+            ) : null}
           </div>
         </div>
       </DndContext>

@@ -23,6 +23,7 @@ export function createMediaClip(
   clips: Clip[],
   canvasWidth: number,
   canvasHeight: number,
+  placement: Partial<Pick<Clip, 'startFrame' | 'trackIndex'>> = {},
 ): Clip {
   const { file, metadata, src, type } = item
   const layout = fitWithinCanvas(
@@ -31,7 +32,7 @@ export function createMediaClip(
     canvasWidth,
     canvasHeight,
   )
-  const trackIndex = trackFor(type, clips)
+  const trackIndex = placement.trackIndex ?? trackFor(type, clips)
   const durationInFrames = Math.max(
     1,
     Math.round(metadata.durationInSeconds * FPS),
@@ -45,7 +46,7 @@ export function createMediaClip(
     sourceFileSizeBytes: file.size,
     name: file.name,
     sourceDurationInFrames: durationInFrames,
-    startFrame: lastEndForTrack(clips, trackIndex),
+    startFrame: placement.startFrame ?? lastEndForTrack(clips, trackIndex),
     durationInFrames,
     trimBeforeFrames: 0,
     trimAfterFrames: null,

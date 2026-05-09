@@ -47,7 +47,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     [clips],
   )
 
-  const addFiles = useCallback(async (files: FileList | File[]) => {
+  const addFiles = useCallback(async (
+    files: FileList | File[],
+    placement: { startFrame?: number; trackIndex?: number } = {},
+  ) => {
     const imports = await importMediaFiles(files)
     if (imports.length === 0) return
 
@@ -60,8 +63,12 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       const next = prev.slice()
 
       for (const item of imports) {
+        const clipPlacement =
+          newClips.length === 0
+            ? placement
+            : { trackIndex: placement.trackIndex }
         const clip: Clip = {
-          ...createMediaClip(item, next, width, height),
+          ...createMediaClip(item, next, width, height, clipPlacement),
           uploadStatus: 'uploading',
         }
         next.push(clip)
