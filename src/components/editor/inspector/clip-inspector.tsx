@@ -343,7 +343,7 @@ export function ClipInspector({ clip }: Props) {
   }
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
         <Accordion
           type="multiple"
@@ -796,7 +796,7 @@ export function ClipInspector({ clip }: Props) {
         )}
         </Accordion>
       </ScrollArea>
-    </aside>
+    </div>
   )
 }
 
@@ -838,7 +838,7 @@ function TextClipInspector({
   const backgroundBorderRadius = clip.backgroundBorderRadius ?? 20
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
         <Accordion
           type="multiple"
@@ -1260,6 +1260,6 @@ function TextClipInspector({
           </Section>
         </Accordion>
       </ScrollArea>
-    </aside>
+    </div>
   )
 }

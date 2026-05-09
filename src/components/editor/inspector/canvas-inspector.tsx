@@ -126,7 +126,7 @@ export function CanvasInspector({
   }, [height, selectedCanvasPresetId, width])
 
   return (
-    <aside className="flex min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
         <div className="flex min-w-0 flex-col gap-4 p-3">
           <section className="space-y-2">
@@ -321,6 +321,6 @@ export function CanvasInspector({
       </ScrollArea>
 
       <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />
-    </aside>
+    </div>
   )
 }
