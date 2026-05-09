@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { Player } from '@remotion/player'
 
 import { VideoComposition } from '../composition/video-composition'
@@ -30,6 +30,7 @@ export function Preview() {
   const [isDragging, setDragging] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const previewRef = useRef<HTMLDivElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 })
@@ -61,7 +62,7 @@ export function Preview() {
     return () => observer.disconnect()
   }, [height, rulerOffset, width])
 
-  useLayoutEffect(() => {
+  const recomputeCanvasOrigin = useCallback(() => {
     const previewEl = previewRef.current
     const canvasEl = canvasWrapperRef.current
     if (!previewEl || !canvasEl) return
@@ -72,7 +73,12 @@ export function Preview() {
       x: canvasRect.left - previewRect.left,
       y: canvasRect.top - previewRect.top,
     })
+  }, [])
+
+  useLayoutEffect(() => {
+    recomputeCanvasOrigin()
   }, [
+    recomputeCanvasOrigin,
     canvasSize.width,
     canvasSize.height,
     previewSize.width,
@@ -117,7 +123,7 @@ export function Preview() {
     <div
       ref={previewRef}
       data-preview-pane
-      className="relative flex min-w-0 flex-1 overflow-auto bg-secondary dark:bg-secondary/40"
+      className="relative flex min-w-0 flex-1 overflow-hidden bg-secondary dark:bg-secondary/40"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -130,8 +136,13 @@ export function Preview() {
           void addFiles(e.dataTransfer.files)
         }
       }}
-      style={{ paddingLeft: rulerOffset, paddingTop: rulerOffset }}
     >
+      <div
+        ref={scrollRef}
+        className="relative flex min-w-0 flex-1 overflow-auto"
+        style={{ paddingLeft: rulerOffset, paddingTop: rulerOffset }}
+        onScroll={recomputeCanvasOrigin}
+      >
       <div
         ref={(node) => {
           fullscreenElementRef.current = node
@@ -177,6 +188,7 @@ export function Preview() {
         {isDragging && (
           <div className="pointer-events-none absolute inset-0 border-2 border-dashed border-editor-selection" />
         )}
+      </div>
       </div>
 
       {!isFullscreen && canvasSize.width > 0 ? (
