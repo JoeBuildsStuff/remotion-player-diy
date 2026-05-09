@@ -23,6 +23,10 @@ import {
 } from '@/components/ui/tooltip'
 
 import { useEditor } from '../model/editor-context-value'
+import {
+  beginTimelineInteraction,
+  endTimelineInteraction,
+} from '../timeline/timeline-interaction'
 import { formatFrame } from './transport-time'
 
 export function TransportBar() {
@@ -223,6 +227,9 @@ export function TransportBar() {
             aria-label="Timeline zoom"
             value={[Math.round(timelineZoom * 100)]}
             onValueChange={(v) => setTimelineZoom((v[0] ?? 100) / 100)}
+            onPointerDown={beginTimelineInteraction}
+            onPointerUp={endTimelineInteraction}
+            onPointerCancel={endTimelineInteraction}
             min={50}
             max={400}
             step={1}
