@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlayerRef } from '@remotion/player'
 
-import { uploadSourceFile } from '@/lib/upload-client'
+import { uploadSourceFile } from './upload-client'
 
 import { createMediaClip, createTextClip } from './clip-factory'
 import {

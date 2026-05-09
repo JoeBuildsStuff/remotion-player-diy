@@ -32,7 +32,7 @@ export function ProjectInfoButton() {
             onClick={() => setIsOpen(true)}
             className="h-7 w-7"
           >
-            <AtSign className="h-4 w-4" />       
+            <AtSign className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Project information</TooltipContent>

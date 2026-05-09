@@ -14,6 +14,7 @@ import {
   InputGroupText,
 } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -125,189 +126,199 @@ export function CanvasInspector({
   }, [height, selectedCanvasPresetId, width])
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-4 border-r p-3">
-      <section className="space-y-2">
-        <Label className="">Canvas</Label>
-        <Select
-          value={selectedCanvasPreset?.id ?? 'custom'}
-          onValueChange={(value) => {
-            if (value === 'custom') return
+    <aside className="flex min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+        <div className="flex min-w-0 flex-col gap-4 p-3">
+          <section className="space-y-2">
+            <Label className="">Canvas</Label>
+            <Select
+              value={selectedCanvasPreset?.id ?? 'custom'}
+              onValueChange={(value) => {
+                if (value === 'custom') return
 
-            const preset = CANVAS_SIZE_OPTIONS.find(
-              (option) => option.id === value,
-            )
-            if (!preset) return
+                const preset = CANVAS_SIZE_OPTIONS.find(
+                  (option) => option.id === value,
+                )
+                if (!preset) return
 
-            setSelectedCanvasPresetId(preset.id)
-            setWidth(preset.width)
-            setHeight(preset.height)
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select size">
-              {selectedCanvasPreset ? (
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <CanvasPresetIcon
-                    width={selectedCanvasPreset.width}
-                    height={selectedCanvasPreset.height}
-                  />
-                  <span className="truncate">{selectedCanvasPreset.name}</span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {selectedCanvasPreset.ratio}
-                  </span>
-                </span>
-              ) : (
-                <span className="text-muted-foreground">Custom</span>
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent
-            position="popper"
-            align="end"
-            className="w-80 max-w-[calc(100vw-1rem)]"
-          >
-            <SelectItem value="custom">Custom</SelectItem>
-            <SelectSeparator />
-            {CANVAS_SIZE_PRESETS.map((group, groupIndex) => (
-              <SelectGroup key={group.label}>
-                <SelectLabel>{group.label}</SelectLabel>
-                {group.options.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    <span className="flex min-w-0 flex-1 items-center gap-2 pr-5">
+                setSelectedCanvasPresetId(preset.id)
+                setWidth(preset.width)
+                setHeight(preset.height)
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select size">
+                  {selectedCanvasPreset ? (
+                    <span className="flex min-w-0 items-center gap-1.5">
                       <CanvasPresetIcon
-                        width={option.width}
-                        height={option.height}
+                        width={selectedCanvasPreset.width}
+                        height={selectedCanvasPreset.height}
                       />
-                      <span className="min-w-0 flex-1 truncate">
-                        {option.name}
+                      <span className="truncate">
+                        {selectedCanvasPreset.name}
                       </span>
                       <span className="shrink-0 text-muted-foreground">
-                        {option.size} · {option.ratio}
+                        {selectedCanvasPreset.ratio}
                       </span>
                     </span>
-                  </SelectItem>
-                ))}
-                {groupIndex < CANVAS_SIZE_PRESETS.length - 1 ? (
-                  <SelectSeparator />
-                ) : null}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-1.5">
-          <InputGroup className="flex-1">
-            <InputGroupAddon>
-              <InputGroupText>W</InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              value={width}
-              onChange={(e) => {
-                setSelectedCanvasPresetId('custom')
-                setWidth(Number(e.target.value) || 0)
-              }}
-            />
-          </InputGroup>
-          <InputGroup className="flex-1">
-            <InputGroupAddon>
-              <InputGroupText>H</InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              value={height}
-              onChange={(e) => {
-                setSelectedCanvasPresetId('custom')
-                setHeight(Number(e.target.value) || 0)
-              }}
-            />
-          </InputGroup>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setSelectedCanvasPresetId('custom')
-              setWidth(height)
-              setHeight(width)
-            }}
-            className="h-8 w-8"
-          >
-            <RotateCw className="size-3" />
-          </Button>
-        </div>
-      </section>
-
-      <section className="space-y-1">
-        <Label className="">Duration</Label>
-        <p className="font-mono text-xs text-muted-foreground">
-          {formatDuration(durationInFrames, fps)}
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <Label className="">Clips</Label>
-        {clips.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No media yet.</p>
-        ) : (
-          <ul className="space-y-1">
-            {clips.map((clip) => (
-              <li
-                key={clip.id}
-                className="truncate rounded bg-secondary/40 px-2 py-1 text-xs text-foreground"
-                title={clip.name}
+                  ) : (
+                    <span className="text-muted-foreground">Custom</span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="end"
+                className="w-80 max-w-[calc(100vw-1rem)]"
               >
-                {clip.name}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                <SelectItem value="custom">Custom</SelectItem>
+                <SelectSeparator />
+                {CANVAS_SIZE_PRESETS.map((group, groupIndex) => (
+                  <SelectGroup key={group.label}>
+                    <SelectLabel>{group.label}</SelectLabel>
+                    {group.options.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        <span className="flex min-w-0 flex-1 items-center gap-2 pr-5">
+                          <CanvasPresetIcon
+                            width={option.width}
+                            height={option.height}
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {option.name}
+                          </span>
+                          <span className="shrink-0 text-muted-foreground">
+                            {option.size} · {option.ratio}
+                          </span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                    {groupIndex < CANVAS_SIZE_PRESETS.length - 1 ? (
+                      <SelectSeparator />
+                    ) : null}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1.5">
+              <InputGroup className="flex-1">
+                <InputGroupAddon>
+                  <InputGroupText>W</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  value={width}
+                  onChange={(e) => {
+                    setSelectedCanvasPresetId('custom')
+                    setWidth(Number(e.target.value) || 0)
+                  }}
+                />
+              </InputGroup>
+              <InputGroup className="flex-1">
+                <InputGroupAddon>
+                  <InputGroupText>H</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  value={height}
+                  onChange={(e) => {
+                    setSelectedCanvasPresetId('custom')
+                    setHeight(Number(e.target.value) || 0)
+                  }}
+                />
+              </InputGroup>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSelectedCanvasPresetId('custom')
+                  setWidth(height)
+                  setHeight(width)
+                }}
+                className="h-8 w-8"
+              >
+                <RotateCw className="size-3" />
+              </Button>
+            </div>
+          </section>
 
-      <section className="space-y-2 w-full">
-        <Label className="">Export</Label>
-        <Select value="mp4">
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="mp4">MP4 (H.264)</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="space-y-3 p-2">
-          <SliderRow
-            label="Resolution"
-            value={exportSettings.resolutionScale}
-            min={25}
-            max={100}
-            step={25}
-            suffix="%"
-            onChange={(value) => updateExportSetting('resolutionScale', value)}
-          />
-          <SliderRow
-            label="Quality"
-            value={exportSettings.quality}
-            min={1}
-            max={100}
-            step={1}
-            suffix="%"
-            onChange={(value) => updateExportSetting('quality', value)}
-          />
-          <SliderRow
-            label="Audio"
-            value={exportSettings.audioBitrateKbps}
-            min={64}
-            max={320}
-            step={32}
-            suffix="K"
-            onChange={(value) => updateExportSetting('audioBitrateKbps', value)}
-          />
+          <section className="space-y-1">
+            <Label className="">Duration</Label>
+            <p className="font-mono text-xs text-muted-foreground">
+              {formatDuration(durationInFrames, fps)}
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <Label className="">Clips</Label>
+            {clips.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No media yet.</p>
+            ) : (
+              <ul className="space-y-1">
+                {clips.map((clip) => (
+                  <li
+                    key={clip.id}
+                    className="truncate rounded bg-secondary/40 px-2 py-1 text-xs text-foreground"
+                    title={clip.name}
+                  >
+                    {clip.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="w-full space-y-2">
+            <Label className="">Export</Label>
+            <Select value="mp4">
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mp4">MP4 (H.264)</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="space-y-3 p-2">
+              <SliderRow
+                label="Resolution"
+                value={exportSettings.resolutionScale}
+                min={25}
+                max={100}
+                step={25}
+                suffix="%"
+                onChange={(value) =>
+                  updateExportSetting('resolutionScale', value)
+                }
+              />
+              <SliderRow
+                label="Quality"
+                value={exportSettings.quality}
+                min={1}
+                max={100}
+                step={1}
+                suffix="%"
+                onChange={(value) => updateExportSetting('quality', value)}
+              />
+              <SliderRow
+                label="Audio"
+                value={exportSettings.audioBitrateKbps}
+                min={64}
+                max={320}
+                step={32}
+                suffix="K"
+                onChange={(value) =>
+                  updateExportSetting('audioBitrateKbps', value)
+                }
+              />
+            </div>
+            <Button
+              disabled={clips.length === 0}
+              onClick={() => setRenderOpen(true)}
+              size="default"
+              variant="secondary"
+              className="w-full"
+            >
+              Render video
+            </Button>
+          </section>
         </div>
-        <Button
-          disabled={clips.length === 0}
-          onClick={() => setRenderOpen(true)}
-          size="default"
-          variant="secondary"
-          className="w-full"
-        >
-          Render video
-        </Button>
-      </section>
+      </ScrollArea>
 
       <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />
     </aside>

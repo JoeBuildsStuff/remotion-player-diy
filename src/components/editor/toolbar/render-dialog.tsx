@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
-import { useRendering } from '@/lib/use-rendering'
+import { useRendering } from '../model/use-rendering'
 
 import { useEditor } from '../model/editor-context-value'
 

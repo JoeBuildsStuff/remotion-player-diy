@@ -1,20 +1,5 @@
 import { useRef, useState } from 'react'
-import {
-  Download,
-  Image as ImageIcon,
-  Minus,
-  MousePointer2,
-  Music,
-  Plus,
-  Redo2,
-  Save,
-  Square,
-  Type,
-  Undo2,
-  Upload,
-  Video,
-  Ruler,
-} from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -25,9 +10,10 @@ import {
 } from '@/components/ui/tooltip'
 
 import { useEditor } from '../model/editor-context-value'
-import { ProjectInfoButton } from './project-info-button'
 import { RenderDialog } from './render-dialog'
-import { ThemeToggle } from './theme-toggle'
+import { ToolbarActionGroups } from './toolbar-action-groups'
+import { ToolbarLogo } from './toolbar-logo'
+import { ToolbarSettingsMenu } from './toolbar-settings-menu'
 
 export function Toolbar() {
   const {
@@ -44,7 +30,7 @@ export function Toolbar() {
   const [renderOpen, setRenderOpen] = useState(false)
 
   return (
-    <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-2">
+    <header className="grid h-11 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-2">
       <input
         ref={fileInputRef}
         type="file"
@@ -57,184 +43,17 @@ export function Toolbar() {
         }}
       />
 
-      <div className="flex items-center gap-1.5">
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Select"
-                className="h-7 w-7"
-              >
-                <MousePointer2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Select</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Rectangle"
-                className="h-7 w-7"
-              >
-                <Square className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Rectangle</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Text"
-                onClick={addTextClip}
-                className="h-7 w-7"
-              >
-                <Type className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Text</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                type="button"
-                aria-pressed={showCanvasRulers}
-                aria-label={showCanvasRulers ? 'Hide rulers' : 'Show rulers'}
-                onClick={toggleCanvasRulers}
-                className="h-7 w-7 aria-pressed:bg-muted aria-pressed:text-foreground"
-              >
-                <Ruler className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {showCanvasRulers ? 'Hide rulers' : 'Show rulers'}
-            </TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
+      <ToolbarLogo />
 
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Image"
-                className="h-7 w-7"
-              >
-                <ImageIcon className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Image</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Video"
-                className="h-7 w-7"
-              >
-                <Video className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Video</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Audio"
-                className="h-7 w-7"
-              >
-                <Music className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Audio</TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
+      <ToolbarActionGroups
+        addTextClip={addTextClip}
+        showCanvasRulers={showCanvasRulers}
+        toggleCanvasRulers={toggleCanvasRulers}
+        onImportMedia={() => fileInputRef.current?.click()}
+        onExport={() => setRenderOpen(true)}
+      />
 
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Undo"
-                className="h-7 w-7"
-              >
-                <Undo2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Undo</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Redo"
-                className="h-7 w-7"
-              >
-                <Redo2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Redo</TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
-
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Save"
-                className="h-7 w-7"
-              >
-                <Save className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Save</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Import media"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Import media</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Export"
-                onClick={() => setRenderOpen(true)}
-                className="h-7 w-7"
-              >
-                <Upload className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Export</TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
-      </div>
-
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-self-end gap-1.5">
         <ButtonGroup>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -281,8 +100,7 @@ export function Toolbar() {
           </Tooltip>
         </ButtonGroup>
 
-        <ProjectInfoButton />
-        <ThemeToggle />
+        <ToolbarSettingsMenu />
       </div>
 
       <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />
