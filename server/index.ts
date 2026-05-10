@@ -210,6 +210,13 @@ app.post('/api/render', async (c) => {
         crf: qualityToCrf(body.exportSettings.quality),
         audioBitrate: `${body.exportSettings.audioBitrateKbps}K`,
         scale: body.exportSettings.resolutionScale / 100,
+        chromiumOptions: {
+          // Recommended for Docker per
+          // https://www.remotion.dev/docs/miscellaneous/linux-single-process
+          // — faster + more memory-stable than the default sandboxed mode
+          // when running headless under Linux.
+          enableMultiProcessOnLinux: true,
+        },
         onProgress: ({ progress }) => {
           // Hono's writeSSE returns a promise; the renderer doesn't await us,
           // so just queue the write and let any ordering shake out via SSE.
