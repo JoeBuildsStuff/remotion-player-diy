@@ -8,7 +8,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import {
-  Clapperboard,
+  Film,
 } from 'lucide-react'
 
 import { useEditor } from '../model/editor-context-value'
@@ -47,7 +47,7 @@ export function Inspector() {
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Clapperboard className="size-6" strokeWidth={1.5}/>
+              <Film className="size-5.5!" strokeWidth={1.5}/>
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">Remotion Player DIY</span>
