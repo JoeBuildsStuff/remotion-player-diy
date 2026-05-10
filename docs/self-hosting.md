@@ -96,6 +96,25 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
 
 **Backups.** Back up the `/data` volume. Nothing else is stateful.
 
+## Security: `/media/*` is public
+
+Uploaded source media and rendered output are served unauthenticated at `/media/sources/<id>` and `/media/renders/<id>`. The shared-secret gate only protects the *write* paths (`/api/upload`, `/api/render`). Reads rely on UUIDv4 (~122 bits of entropy) for unguessability — the same security model as a Vercel Blob with `addRandomSuffix`.
+
+This is a deliberate trade-off: browser `<video>` elements can't attach a custom auth header to source-clip preview requests, so gating `/media/*` with `x-render-secret` would break the editor's preview. If you need a stronger gate without implementing signed URLs, put the whole hostname behind a reverse-proxy auth layer (Traefik basic-auth, Authelia, Authentik, Cloudflare Access). That covers the SPA, API, and `/media` together.
+
+## Common deploy gotchas
+
+These are worth knowing if you build your own image:
+
+- **Build-time secret must equal runtime secret.** `VITE_RENDER_SHARED_SECRET` is baked into the SPA bundle at `docker build` time; the browser sends it in `x-render-secret`. The server checks against `RENDER_SHARED_SECRET` from runtime env. They are the same conceptual value living in two places. If they disagree, every request returns `401`. Rotating the value means rebuilding the image *and* restarting the container.
+- **Recreate the container after changing runtime env.** Watchtower (and any other image-update tool) preserves the original container's env when it pulls a new image. So if you set `RENDER_SHARED_SECRET` after the container first started, the running container still has the old (or empty) value. Recreate with `docker compose up -d --force-recreate` to reload `.env`.
+- **The bundler runs at render time, not at build time.** `@remotion/bundler` webpacks `remotion/index.ts` and *all* transitive imports the first time `/api/render` is called. Anything `Root.tsx` reaches (typically files under `src/`) must be present in the runtime image, not just in the SPA `dist/`. Our Dockerfile copies `src/`, `public/`, `tsconfig*.json`, and `remotion.config.ts` into the runtime stage for this reason.
+- **`npx remotion browser ensure` does not install Chromium's system libs.** It downloads the binary, but the slim Debian base needs `libnss3 libnspr4 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libxfixes3 libgbm1 libpango-1.0-0 libcairo2 libasound2 fonts-liberation` via apt or chrome-headless-shell errors with `libnspr4.so: cannot open shared object file`. Our Dockerfile installs them; the canonical list is mirrored from [the Remotion docs](https://www.remotion.dev/docs/docker).
+- **Disk fills faster than you'd think.** Each upload retry creates a fresh UUID-prefixed copy in `sources/` — three failed renders of the same 30 MB clip means 90 MB on disk, not 30. Cleanup runs every 24h and only catches sources older than 30 days. To free space immediately:
+  ```bash
+  docker exec <container> sh -c 'rm -rf /data/sources/* /data/renders/*'
+  ```
+
 ## Local development against the server
 
 ```bash
