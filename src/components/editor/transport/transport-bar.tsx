@@ -1,5 +1,4 @@
 import {
-  Magnet,
   Maximize,
   Minus,
   Pause,
@@ -97,18 +96,6 @@ export function TransportBar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Split</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Snap"
-            >
-              <Magnet className="h-4 w-4 text-editor-selection-border" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Snap</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>

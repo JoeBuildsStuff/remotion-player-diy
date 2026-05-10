@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -19,18 +19,6 @@ import {
   type ClipDragData,
 } from './composition-geometry'
 import { SelectionOutline } from './selection-outline'
-import { SnapGuideOverlay } from './snap-guide-overlay'
-import {
-  arraysEqual,
-  computeDragSnap,
-  EMPTY_SNAP_GUIDES,
-  INITIAL_SNAP_STICKY,
-  type SnapGuides,
-  type SnapStickyState,
-} from './snap-guides'
-
-const SNAP_ENTER_PX = 6
-const SNAP_EXIT_PX = 12
 
 type VideoCompositionProps = {
   clips: Clip[]
@@ -45,11 +33,9 @@ export function VideoComposition({
   setSelectedClipId,
   updateClip,
 }: VideoCompositionProps) {
-  const { fps, width: compositionWidth, height: compositionHeight } = useVideoConfig()
+  const { fps } = useVideoConfig()
   const canEdit = setSelectedClipId != null && updateClip != null
   const activeClipDragRef = useRef<ActiveClipDrag | null>(null)
-  const stickyRef = useRef<SnapStickyState>(INITIAL_SNAP_STICKY)
-  const [snapGuides, setSnapGuides] = useState<SnapGuides>(EMPTY_SNAP_GUIDES)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -61,7 +47,6 @@ export function VideoComposition({
   const handleDragStart = ({ active }: DragStartEvent) => {
     const data = active.data.current as ClipDragData | undefined
     activeClipDragRef.current = data ?? null
-    stickyRef.current = INITIAL_SNAP_STICKY
   }
 
   const updateDraggedClipPosition = (delta: DragMoveEvent['delta']) => {
@@ -73,32 +58,8 @@ export function VideoComposition({
 
     const rawX = drag.x + delta.x / drag.scale
     const rawY = drag.y + delta.y / drag.scale
-    const enterThreshold = SNAP_ENTER_PX / drag.scale
-    const exitThreshold = SNAP_EXIT_PX / drag.scale
-
-    const snap = computeDragSnap({
-      clip,
-      rawX,
-      rawY,
-      otherClips: clips,
-      compositionWidth,
-      compositionHeight,
-      enterThreshold,
-      exitThreshold,
-      sticky: stickyRef.current,
-    })
-
-    stickyRef.current = snap.sticky
-
-    setSnapGuides((prev) =>
-      arraysEqual(prev.vertical, snap.guides.vertical) &&
-      arraysEqual(prev.horizontal, snap.guides.horizontal)
-        ? prev
-        : snap.guides,
-    )
-
-    const nextX = Math.round(snap.x)
-    const nextY = Math.round(snap.y)
+    const nextX = Math.round(rawX)
+    const nextY = Math.round(rawY)
     if (nextX !== clip.x || nextY !== clip.y) {
       updateClip(drag.clipId, { x: nextX, y: nextY })
     }
@@ -111,8 +72,6 @@ export function VideoComposition({
   const handleDragEnd = ({ delta }: DragEndEvent) => {
     updateDraggedClipPosition(delta)
     activeClipDragRef.current = null
-    stickyRef.current = INITIAL_SNAP_STICKY
-    setSnapGuides(EMPTY_SNAP_GUIDES)
   }
 
   return (
@@ -123,8 +82,6 @@ export function VideoComposition({
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         activeClipDragRef.current = null
-        stickyRef.current = INITIAL_SNAP_STICKY
-        setSnapGuides(EMPTY_SNAP_GUIDES)
       }}
     >
       <AbsoluteFill
@@ -145,8 +102,6 @@ export function VideoComposition({
             </Sequence>
           ))}
         </AbsoluteFill>
-
-        {canEdit ? <SnapGuideOverlay guides={snapGuides} /> : null}
 
         {canEdit
           ? sortOutlines(clips, selectedClipId).map((clip) => (
