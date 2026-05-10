@@ -89,8 +89,9 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
         <DialogHeader>
           <DialogTitle>Export video</DialogTitle>
           <DialogDescription>
-            Renders on Vercel Sandbox. The first render after a deploy can
-            take 30–60 s extra to warm up.
+            {import.meta.env.VITE_DEPLOY_MODE === 'selfhost'
+              ? 'Renders locally with @remotion/renderer. Bundling can add ~30 s to the first render after a container restart, then subsequent renders are fast.'
+              : 'Renders on Vercel Sandbox. The first render after a deploy can take 30–60 s extra to warm up.'}
           </DialogDescription>
         </DialogHeader>
 
