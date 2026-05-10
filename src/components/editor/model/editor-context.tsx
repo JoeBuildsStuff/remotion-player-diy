@@ -25,8 +25,8 @@ import { clamp, durationInFramesFor } from './time'
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const playerRef = useRef<PlayerRef | null>(null)
   const fullscreenElementRef = useRef<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState(1080)
-  const [height, setHeight] = useState(1920)
+  const [width, setWidth] = useState(1920)
+  const [height, setHeight] = useState(1080)
   const [volume, setVolume] = useState(0.4)
   const [exportSettings, setExportSettings] = useState<ExportSettings>({
     quality: 70,
