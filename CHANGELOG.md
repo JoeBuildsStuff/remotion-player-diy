@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.1.0...v1.2.0) (2026-05-10)
+
+
+### Features
+
+* Update index.html with SEO metadata and favicon, replace Clapperboard icon with Film in inspector, and adjust logo size for improved UI consistency. ([9915e06](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/9915e060d51e834d8393ae1bdfaa8c2b3af198c1))
+
 # [1.1.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.3...v1.1.0) (2026-05-10)
 
 
