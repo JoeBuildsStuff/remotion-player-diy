@@ -5,6 +5,7 @@ export type MediaMetadata = {
   durationInSeconds: number
   width: number | null
   height: number | null
+  fps: number | null
 }
 
 export type ImportedMedia = {
@@ -23,6 +24,7 @@ function fileTypeOf(file: File): ClipType | null {
 
 function probeMediaMetadata(
   src: string,
+  file: File,
   type: ClipType,
 ): Promise<MediaMetadata> {
   if (type === 'image') {
@@ -34,6 +36,7 @@ function probeMediaMetadata(
           durationInSeconds: IMAGE_DEFAULT_SECONDS,
           width: img.naturalWidth || null,
           height: img.naturalHeight || null,
+          fps: null,
         })
       }
       img.onerror = () => {
@@ -41,19 +44,66 @@ function probeMediaMetadata(
           durationInSeconds: IMAGE_DEFAULT_SECONDS,
           width: null,
           height: null,
+          fps: null,
         })
       }
     })
   }
 
+  return probeAudioVideoMetadata(file, type).catch(() =>
+    probeAudioVideoMetadataWithElement(src, type),
+  )
+}
+
+async function probeAudioVideoMetadata(
+  file: File,
+  type: ClipType,
+): Promise<MediaMetadata> {
+  const { ALL_FORMATS, BlobSource, Input } = await import('mediabunny')
+  const input = new Input({
+    formats: ALL_FORMATS,
+    source: new BlobSource(file),
+  })
+
+  try {
+    const videoTrack =
+      type === 'video' ? await input.getPrimaryVideoTrack() : null
+    const [durationInSeconds, dimensions, packetStats] = await Promise.all([
+      input.computeDuration(),
+      videoTrack
+        ? Promise.all([
+            videoTrack.getDisplayWidth(),
+            videoTrack.getDisplayHeight(),
+          ]).then(([width, height]) => ({
+            width: width || null,
+            height: height || null,
+          }))
+        : Promise.resolve({ width: null, height: null }),
+      videoTrack ? videoTrack.computePacketStats(50) : Promise.resolve(null),
+    ])
+
+    return {
+      durationInSeconds: validDuration(durationInSeconds),
+      width: dimensions.width,
+      height: dimensions.height,
+      fps: packetStats?.averagePacketRate ?? null,
+    }
+  } finally {
+    input.dispose()
+  }
+}
+
+function probeAudioVideoMetadataWithElement(
+  src: string,
+  type: ClipType,
+): Promise<MediaMetadata> {
   return new Promise((resolve) => {
     const el = document.createElement(type) as HTMLMediaElement
     el.preload = 'metadata'
     el.src = src
     el.onloadedmetadata = () => {
-      const d = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 5
       resolve({
-        durationInSeconds: d,
+        durationInSeconds: validDuration(el.duration),
         width:
           type === 'video' && el instanceof HTMLVideoElement
             ? el.videoWidth || null
@@ -62,6 +112,7 @@ function probeMediaMetadata(
           type === 'video' && el instanceof HTMLVideoElement
             ? el.videoHeight || null
             : null,
+        fps: null,
       })
     }
     el.onerror = () => {
@@ -69,9 +120,16 @@ function probeMediaMetadata(
         durationInSeconds: 5,
         width: null,
         height: null,
+        fps: null,
       })
     }
   })
+}
+
+function validDuration(durationInSeconds: number) {
+  return Number.isFinite(durationInSeconds) && durationInSeconds > 0
+    ? durationInSeconds
+    : 5
 }
 
 export async function importMediaFiles(
@@ -88,7 +146,7 @@ export async function importMediaFiles(
       file,
       type,
       src,
-      metadata: await probeMediaMetadata(src, type),
+      metadata: await probeMediaMetadata(src, file, type),
     })
   }
 
