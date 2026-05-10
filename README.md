@@ -6,9 +6,10 @@ A browser-based Remotion editor for arranging media and text clips, previewing t
 
 The editor can be used locally without Vercel if you only want to build and preview content in the browser. Exporting/rendering videos is server-side because browser/client-side rendering has practical limits: long videos can be slow, memory-constrained, blocked by local `blob:` URLs, and unreliable across devices.
 
-Two deploy paths are supported:
+Three deployment modes are supported. See [Deployment Modes](#deployment-modes) for which to pick.
 
-- **Vercel (cloud).** Vercel Blob + Vercel Sandbox + Vercel Cron. See the [Server-Side Rendering on Vercel](#server-side-rendering-on-vercel) section below.
+- **Public OSS demo on Vercel (default).** Editing/preview only. Cloud rendering is gated off so a fork at, e.g., `your-fork.vercel.app` doesn't burn Vercel Sandbox/Blob/Cron quota when strangers visit.
+- **Vercel with cloud rendering enabled.** Same Vercel project, but with `CLOUD_RENDER_ENABLED=true` plus the secrets below. Uses Vercel Blob + Vercel Sandbox + Vercel Cron.
 - **Self-hosted (Docker).** Single container, local filesystem storage, `@remotion/renderer` for rendering. See [docs/self-hosting.md](./docs/self-hosting.md) and the prebuilt image at `ghcr.io/joebuildsstuff/remotion-player-diy:latest`.
 
 ## Documentation
@@ -59,11 +60,34 @@ Snapshot creation is decoupled from app deploys. Run `pnpm create-snapshot` manu
 - New snapshots expire after 30 days. The script also deletes the previous snapshot via the `@vercel/sandbox` SDK so storage does not accumulate.
 - If the pointer is missing or stale, `/api/render` logs a warning and falls back to a cold sandbox build — renders still succeed, just slower.
 
+## Deployment Modes
+
+Cloud rendering is opt-in via two env vars — one server-side, one client-side. They must agree.
+
+| Mode | `CLOUD_RENDER_ENABLED` (server) | `VITE_CLOUD_RENDER_ENABLED` (client) | `VITE_DEPLOY_MODE` | What works |
+| --- | --- | --- | --- | --- |
+| **Public OSS demo** (default) | unset / `false` | unset / `false` | `vercel` | Editing, preview. Export button shows a "self-host to render" message. `/api/render`, `/api/upload`, `/api/cleanup` return 403. |
+| **Vercel cloud rendering** | `true` | `true` | `vercel` | Full pipeline: Blob upload → Sandbox render → Blob output → daily Cron cleanup. |
+| **Self-hosted Docker** | n/a (different server) | n/a | `selfhost` | Local rendering with `@remotion/renderer`, files on local disk. |
+
+The gate matters because the Vercel deploy is public — without it, any visitor could trigger Sandbox renders and Blob uploads against your account. The client check hides the UI; the server check is the actual enforcement.
+
+If you enable cloud rendering on a public deploy, also:
+
+- Set a [Vercel Spend Management](https://vercel.com/docs/spend-management) cap.
+- Consider [Vercel Deployment Protection](https://vercel.com/docs/deployment-protection) so only your accounts can hit the app at all.
+- Treat `VITE_RENDER_SHARED_SECRET` as a soft gate, not real auth — anything `VITE_*` is shipped to the browser bundle. Add real authentication before opening rendering to untrusted users.
+
 ## Environment Variables
 
-Create a local `.env.local` for development and add the same values in the Vercel project settings for deployed rendering:
+Create a local `.env.local` for development and add the same values in the Vercel project settings for deployed rendering. See [.env.example](./.env.example) for a starter file.
 
 ```bash
+# Cloud-rendering gate. Public OSS demos leave both unset (or "false").
+CLOUD_RENDER_ENABLED=true
+VITE_CLOUD_RENDER_ENABLED=true
+
+# Required when CLOUD_RENDER_ENABLED=true.
 RENDER_SHARED_SECRET=replace-with-a-long-random-secret
 VITE_RENDER_SHARED_SECRET=replace-with-the-same-secret
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_replace-with-your-token
@@ -74,12 +98,13 @@ Do not commit real secrets. The two render shared-secret values must match becau
 
 | Variable | Used by | Purpose |
 | --- | --- | --- |
-| `RENDER_SHARED_SECRET` | `/api/upload` and `/api/render` | Server-side expected value for the `x-render-secret` header. It prevents unauthenticated calls to the upload-token and render endpoints. |
+| `CLOUD_RENDER_ENABLED` | `/api/render`, `/api/upload`, `/api/cleanup` | Master switch. Must be `"true"` for any of the cloud-render API routes to do anything. Anything else → 403 (cleanup returns a no-op success). |
+| `VITE_CLOUD_RENDER_ENABLED` | Browser client | Mirror of the above. Hides the upload/export UI when not `"true"`. The editor still works for local browsing/preview. |
+| `RENDER_SHARED_SECRET` | `/api/upload` and `/api/render` | Server-side expected value for the `x-render-secret` header. Soft gate against drive-by calls; not real auth. |
 | `VITE_RENDER_SHARED_SECRET` | Browser client | Client-side copy of the same shared secret. Vite only exposes env vars prefixed with `VITE_`, so the editor uses this value when calling `/api/upload` and `/api/render`. |
 | `BLOB_READ_WRITE_TOKEN` | Server functions, snapshot script | Vercel Blob read/write token. Required to upload rendered videos, read/write Sandbox snapshot pointers, and clean up old Blob files. |
 | `CRON_SECRET` | `/api/cleanup` | Bearer token required by the cleanup endpoint so only Vercel Cron, or someone with the secret, can delete old Blob objects. |
-
-Because `VITE_RENDER_SHARED_SECRET` is shipped to the browser, treat this as a lightweight gate for your own deployment, not as strong protection for a public multi-user product. Add real authentication, authorization, rate limiting, and spend controls before making rendering broadly available.
+| `VITE_DEPLOY_MODE` | Browser client | `vercel` (default) or `selfhost`. Selfhost mode routes uploads to the Docker container's local server instead of Vercel Blob. |
 
 ## Vercel Deployment Notes
 

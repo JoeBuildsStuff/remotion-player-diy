@@ -45,6 +45,14 @@ function unauthorized() {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // Public OSS demo deploys leave CLOUD_RENDER_ENABLED unset so visitors can't
+  // burn Sandbox/Blob quota. Self-hosters opt in by setting it to "true".
+  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
+    return new Response(
+      'Cloud rendering is disabled on this deployment. See README "Deployment Modes" to enable it on your own deploy or self-host with Docker.',
+      { status: 403 },
+    )
+  }
   if (!SHARED_SECRET) {
     return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
       status: 500,

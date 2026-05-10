@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress'
 import { useRendering } from '../model/use-rendering'
 
 import { useEditor } from '../model/editor-context-value'
+import { RENDERING_AVAILABLE } from '../model/render-mode'
 
 type RenderDialogProps = {
   open: boolean
@@ -47,6 +48,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
   useEffect(() => {
     if (!open) return
     if (state.status !== 'idle') return
+    if (!RENDERING_AVAILABLE) return
     if (clips.length === 0) return
     if (pendingUploads.length > 0) return
 
@@ -89,14 +91,29 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
         <DialogHeader>
           <DialogTitle>Export video</DialogTitle>
           <DialogDescription>
-            {import.meta.env.VITE_DEPLOY_MODE === 'selfhost'
+            {!RENDERING_AVAILABLE
+              ? 'Server-side rendering is disabled on this public demo to avoid paying for strangers’ renders. Self-host with Docker or enable cloud rendering on your own Vercel deploy.'
+              : import.meta.env.VITE_DEPLOY_MODE === 'selfhost'
               ? 'Renders locally with @remotion/renderer. Bundling can add ~30 s to the first render after a container restart, then subsequent renders are fast.'
               : 'Renders on Vercel Sandbox. The first render after a deploy can take 30–60 s extra to warm up.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          {clips.length === 0 ? (
+          {!RENDERING_AVAILABLE ? (
+            <p className="text-sm text-muted-foreground">
+              See the{' '}
+              <a
+                href="https://github.com/JoeBuildsStuff/remotion-player-diy#deployment-modes"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Deployment Modes
+              </a>{' '}
+              section of the README for setup instructions.
+            </p>
+          ) : clips.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Add at least one clip to the timeline before rendering.
             </p>

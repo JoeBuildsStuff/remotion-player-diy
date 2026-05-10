@@ -1,17 +1,19 @@
 import { upload } from '@vercel/blob/client'
 
+import {
+  DEPLOY_MODE,
+  RENDERING_AVAILABLE,
+  RENDERING_DISABLED_MESSAGE,
+} from '@/components/editor/model/render-mode'
+
+// DEPLOY_MODE controls *how* uploads are sent:
+//   'vercel'   → @vercel/blob/client (token + direct PUT).
+//   'selfhost' → single multipart POST to /api/upload, server writes the
+//                file to its DATA_DIR/sources and returns { url, pathname }.
+
 const SHARED_SECRET = import.meta.env.VITE_RENDER_SHARED_SECRET as
   | string
   | undefined
-
-// 'vercel' (default) → upload via @vercel/blob/client (token + direct PUT).
-// 'selfhost'         → single multipart POST to /api/upload, server writes
-//                      the file to its DATA_DIR/sources and returns
-//                      { url, pathname }.
-const DEPLOY_MODE = (import.meta.env.VITE_DEPLOY_MODE as
-  | 'vercel'
-  | 'selfhost'
-  | undefined) ?? 'vercel'
 
 export type UploadProgress = {
   loaded: number
@@ -35,6 +37,9 @@ export async function uploadSourceFile(
   file: File,
   options?: { onProgress?: (progress: UploadProgress) => void },
 ): Promise<UploadResult> {
+  if (!RENDERING_AVAILABLE) {
+    throw new Error(RENDERING_DISABLED_MESSAGE)
+  }
   if (!SHARED_SECRET) {
     throw new Error(
       'VITE_RENDER_SHARED_SECRET is not set — cannot upload source media.',

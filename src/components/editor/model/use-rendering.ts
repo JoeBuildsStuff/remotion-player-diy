@@ -2,6 +2,10 @@ import { useCallback, useState } from 'react'
 
 import type { ExportSettings } from '@/components/editor/model/editor-context-value'
 import type { Clip } from '@/components/editor/model/editor-types'
+import {
+  RENDERING_AVAILABLE,
+  RENDERING_DISABLED_MESSAGE,
+} from '@/components/editor/model/render-mode'
 
 const SHARED_SECRET = import.meta.env.VITE_RENDER_SHARED_SECRET as
   | string
@@ -81,6 +85,10 @@ export function useRendering() {
   const reset = useCallback(() => setState({ status: 'idle' }), [])
 
   const renderMedia = useCallback(async (inputs: RenderInputs) => {
+    if (!RENDERING_AVAILABLE) {
+      setState({ status: 'error', error: RENDERING_DISABLED_MESSAGE })
+      return
+    }
     if (!SHARED_SECRET) {
       setState({
         status: 'error',

@@ -11,6 +11,14 @@ function unauthorized() {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // Gated identically to /api/render — Blob upload tokens are useless without
+  // the render path, and we don't want anonymous Blob writes either.
+  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
+    return new Response(
+      'Cloud uploads are disabled on this deployment. See README "Deployment Modes".',
+      { status: 403 },
+    )
+  }
   if (!SHARED_SECRET) {
     return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
       status: 500,

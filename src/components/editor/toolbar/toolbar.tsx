@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip'
 
 import { useEditor } from '../model/editor-context-value'
+import { RENDERING_AVAILABLE } from '../model/render-mode'
 import { RenderDialog } from './render-dialog'
 import { ToolbarActionGroups } from './toolbar-action-groups'
 import { ToolbarLogo } from './toolbar-logo'
@@ -204,16 +205,35 @@ export function Toolbar() {
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <Button
-              disabled={clips.length === 0}
+              disabled={clips.length === 0 || !RENDERING_AVAILABLE}
               onClick={() => {
                 applyShareQuality(shareQuality)
                 setRenderOpen(true)
               }}
               className="w-full justify-center"
+              title={
+                RENDERING_AVAILABLE
+                  ? undefined
+                  : 'Server rendering is disabled on this public demo. Self-host to export.'
+              }
             >
               <Check className="h-4 w-4" />
               Render
             </Button>
+            {RENDERING_AVAILABLE ? null : (
+              <p className="px-2 pt-1 pb-1 text-xs text-muted-foreground">
+                Export is disabled on this public demo. See the{' '}
+                <a
+                  href="https://github.com/JoeBuildsStuff/remotion-player-diy#deployment-modes"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  README
+                </a>{' '}
+                to self-host.
+              </p>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

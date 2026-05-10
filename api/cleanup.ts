@@ -31,6 +31,11 @@ async function purgePrefix(prefix: string, ttlDays: number) {
 }
 
 export async function GET(request: Request): Promise<Response> {
+  // No Blob writes happen on this deploy when cloud rendering is off, so
+  // there's nothing to clean up. The cron still fires daily but exits here.
+  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
+    return Response.json({ ok: true, skipped: 'cloud-render-disabled' })
+  }
   if (!CRON_SECRET) {
     return new Response('Server misconfigured: CRON_SECRET not set', {
       status: 500,
