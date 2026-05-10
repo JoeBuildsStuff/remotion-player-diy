@@ -5,6 +5,7 @@ import {
 } from '@/components/ui/sidebar'
 
 import { useEditor } from '../model/editor-context-value'
+import { EditorLogo } from '../controls/editor-logo'
 import { CanvasInspector } from './canvas-inspector'
 import { ClipInspector } from './clip-inspector'
 
@@ -33,6 +34,9 @@ export function Inspector() {
       className="absolute h-full border-r"
     >
       <SidebarContent className="bg-background text-foreground">
+        <div className="px-2 py-1">
+          <EditorLogo />
+        </div>
         {selectedClip ? (
           <ClipInspector clip={selectedClip} />
         ) : (

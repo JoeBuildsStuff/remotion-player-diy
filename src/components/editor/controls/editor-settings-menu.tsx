@@ -42,7 +42,7 @@ const themes: Array<{ value: Theme; label: string; icon: LucideIcon }> = [
   { value: 'system', label: 'System', icon: Monitor },
 ]
 
-export function ToolbarSettingsMenu() {
+export function EditorSettingsMenu() {
   const { theme, setTheme } = useTheme()
   const [projectInfoOpen, setProjectInfoOpen] = useState(false)
 

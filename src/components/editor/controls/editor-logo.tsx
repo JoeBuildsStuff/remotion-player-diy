@@ -1,6 +1,6 @@
 import { Clapperboard } from 'lucide-react'
 
-export function ToolbarLogo() {
+export function EditorLogo() {
   return (
     <div
       aria-label="Remotion Player DIY"

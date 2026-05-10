@@ -4,6 +4,7 @@ import { Player } from '@remotion/player'
 import { VideoComposition } from '../composition/video-composition'
 import { useEditor } from '../model/editor-context-value'
 import { CanvasGuidesOverlay, useCanvasGuides } from './canvas-guides'
+import { PreviewCanvasControls } from './preview-canvas-controls'
 import { CanvasRulers, RULER_SIZE } from './canvas-rulers'
 import { usePreviewPlayerEvents, usePreviewVolume } from './preview-player-events'
 
@@ -137,6 +138,8 @@ export function Preview() {
         }
       }}
     >
+      <PreviewCanvasControls />
+
       <div
         ref={scrollRef}
         className="relative flex min-w-0 flex-1 overflow-auto"
