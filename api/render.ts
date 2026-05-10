@@ -18,7 +18,7 @@ const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
 const ExportSettingsSchema = z.object({
   quality: z.number().min(1).max(100),
   audioBitrateKbps: z.number().int().min(64).max(320),
-  resolutionScale: z.number().int().min(25).max(100),
+  resolutionScale: z.number().int().min(25).max(400),
 })
 
 // Strict request validator. The client must replace `src` with the Blob

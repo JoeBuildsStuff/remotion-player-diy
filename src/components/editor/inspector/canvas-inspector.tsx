@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   Clapperboard,
   Clock3,
-  Download,
   PanelTop,
   RectangleHorizontal,
   RectangleVertical,
@@ -29,10 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ExportSettings } from '../model/editor-context-value'
-import { RenderDialog } from '../toolbar/render-dialog'
 import type { Clip } from '../model/editor-types'
-import { SliderRow } from './inspector-controls'
 
 function formatDuration(frames: number, fps: number) {
   const totalSeconds = frames / fps
@@ -90,8 +86,6 @@ export function CanvasInspector({
   durationInFrames,
   fps,
   clips,
-  exportSettings,
-  setExportSettings,
   setWidth,
   setHeight,
 }: {
@@ -100,20 +94,10 @@ export function CanvasInspector({
   durationInFrames: number
   fps: number
   clips: Clip[]
-  exportSettings: ExportSettings
-  setExportSettings: (settings: ExportSettings) => void
   setWidth: (value: number) => void
   setHeight: (value: number) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
-  const [renderOpen, setRenderOpen] = useState(false)
-
-  const updateExportSetting = <K extends keyof ExportSettings>(
-    key: K,
-    value: ExportSettings[K],
-  ) => {
-    setExportSettings({ ...exportSettings, [key]: value })
-  }
 
   const selectedCanvasPreset = useMemo(() => {
     const selected = CANVAS_SIZE_OPTIONS.find(
@@ -276,67 +260,8 @@ export function CanvasInspector({
               </ul>
             )}
           </section>
-
-          <section className="w-full space-y-2">
-            <Label className="flex items-center gap-2">
-              <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>Export</span>
-            </Label>
-            <Select value="mp4">
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mp4">MP4 (H.264)</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="space-y-3 p-2">
-              <SliderRow
-                label="Resolution"
-                value={exportSettings.resolutionScale}
-                min={25}
-                max={100}
-                step={25}
-                suffix="%"
-                onChange={(value) =>
-                  updateExportSetting('resolutionScale', value)
-                }
-              />
-              <SliderRow
-                label="Quality"
-                value={exportSettings.quality}
-                min={1}
-                max={100}
-                step={1}
-                suffix="%"
-                onChange={(value) => updateExportSetting('quality', value)}
-              />
-              <SliderRow
-                label="Audio"
-                value={exportSettings.audioBitrateKbps}
-                min={64}
-                max={320}
-                step={32}
-                suffix="K"
-                onChange={(value) =>
-                  updateExportSetting('audioBitrateKbps', value)
-                }
-              />
-            </div>
-            <Button
-              disabled={clips.length === 0}
-              onClick={() => setRenderOpen(true)}
-              size="default"
-              variant="secondary"
-              className="w-full"
-            >
-              Render video
-            </Button>
-          </section>
         </div>
       </ScrollArea>
-
-      <RenderDialog open={renderOpen} onOpenChange={setRenderOpen} />
     </div>
   )
 }

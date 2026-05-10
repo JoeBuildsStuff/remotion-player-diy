@@ -103,7 +103,11 @@ export function SelectionOutline({
       onPointerDown={(e) => {
         listeners?.onPointerDown?.(e)
         e.stopPropagation()
-        if (e.button === 0) setSelectedClipId(clip.id)
+        if (e.button === 0 && !isSelected) setSelectedClipId(clip.id)
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (isSelected) setSelectedClipId(null)
       }}
       style={{
         position: 'absolute',

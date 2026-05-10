@@ -141,6 +141,11 @@ export function Preview() {
         ref={scrollRef}
         className="relative flex min-w-0 flex-1 overflow-auto"
         style={{ paddingLeft: rulerOffset, paddingTop: rulerOffset }}
+        onPointerDown={(e) => {
+          if (e.button === 0 && e.target === e.currentTarget) {
+            setSelectedClipId(null)
+          }
+        }}
         onScroll={recomputeCanvasOrigin}
       >
       <div

@@ -9,7 +9,6 @@ import {
   Square,
   Type,
   Undo2,
-  Upload,
   Video,
 } from 'lucide-react'
 
@@ -26,13 +25,11 @@ export function ToolbarActionGroups({
   showCanvasRulers,
   toggleCanvasRulers,
   onImportMedia,
-  onExport,
 }: {
   addTextClip: () => void
   showCanvasRulers: boolean
   toggleCanvasRulers: () => void
   onImportMedia: () => void
-  onExport: () => void
 }) {
   return (
     <div className="flex items-center justify-self-center gap-1.5">
@@ -194,20 +191,6 @@ export function ToolbarActionGroups({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Import media</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Export"
-              onClick={onExport}
-              className="h-7 w-7"
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Export</TooltipContent>
         </Tooltip>
       </ButtonGroup>
     </div>

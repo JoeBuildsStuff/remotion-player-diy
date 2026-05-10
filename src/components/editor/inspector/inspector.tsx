@@ -17,8 +17,6 @@ export function Inspector() {
     durationInFrames,
     fps,
     clips,
-    exportSettings,
-    setExportSettings,
     selectedClipId,
   } = useEditor()
 
@@ -41,8 +39,6 @@ export function Inspector() {
             durationInFrames={durationInFrames}
             fps={fps}
             clips={clips}
-            exportSettings={exportSettings}
-            setExportSettings={setExportSettings}
             setWidth={setWidth}
             setHeight={setHeight}
           />

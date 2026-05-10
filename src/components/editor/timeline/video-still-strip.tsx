@@ -1,3 +1,4 @@
+import type { VideoSample } from 'mediabunny'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { Clip } from '../model/editor-types'
@@ -7,7 +8,6 @@ const THUMBNAIL_WIDTH = 56
 const MAX_THUMBNAILS = 80
 const THUMBNAIL_HEIGHT = 28
 const THUMBNAIL_COUNT_STEP = 4
-const SEEK_TIMEOUT_MS = 3000
 const GENERATION_DEBOUNCE_MS = 120
 const STILL_CACHE_MAX_ENTRIES = 24
 
@@ -85,100 +85,8 @@ function abortError() {
   return new DOMException('Video still generation was cancelled', 'AbortError')
 }
 
-function waitForMetadata(video: HTMLVideoElement, signal: AbortSignal) {
-  if (video.readyState >= 1) return Promise.resolve()
-  if (signal.aborted) return Promise.reject(abortError())
-
-  return new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
-      video.removeEventListener('loadedmetadata', handleLoaded)
-      video.removeEventListener('error', handleError)
-      signal.removeEventListener('abort', handleAbort)
-    }
-    const handleLoaded = () => {
-      cleanup()
-      resolve()
-    }
-    const handleError = () => {
-      cleanup()
-      reject(new Error('Unable to load video metadata'))
-    }
-    const handleAbort = () => {
-      cleanup()
-      reject(abortError())
-    }
-
-    video.addEventListener('loadedmetadata', handleLoaded, { once: true })
-    video.addEventListener('error', handleError, { once: true })
-    signal.addEventListener('abort', handleAbort, { once: true })
-  })
-}
-
-function seekTo(
-  video: HTMLVideoElement,
-  timeInSeconds: number,
-  signal: AbortSignal,
-) {
-  if (signal.aborted) return Promise.reject(abortError())
-  if (Math.abs(video.currentTime - timeInSeconds) < 0.001 && video.readyState >= 2) {
-    return Promise.resolve()
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
-      window.clearTimeout(timeout)
-      video.removeEventListener('loadeddata', handleSeeked)
-      video.removeEventListener('seeked', handleSeeked)
-      video.removeEventListener('error', handleError)
-      signal.removeEventListener('abort', handleAbort)
-    }
-    const handleSeeked = () => {
-      cleanup()
-      resolve()
-    }
-    const handleError = () => {
-      cleanup()
-      reject(new Error('Unable to seek video'))
-    }
-    const handleAbort = () => {
-      cleanup()
-      reject(abortError())
-    }
-    const timeout = window.setTimeout(() => {
-      cleanup()
-      reject(new Error('Timed out while seeking video'))
-    }, SEEK_TIMEOUT_MS)
-
-    video.addEventListener('loadeddata', handleSeeked, { once: true })
-    video.addEventListener('seeked', handleSeeked, { once: true })
-    video.addEventListener('error', handleError, { once: true })
-    signal.addEventListener('abort', handleAbort, { once: true })
-    video.currentTime = timeInSeconds
-  })
-}
-
-function drawVideoFrame(video: HTMLVideoElement): Promise<string | null> {
-  const canvas = document.createElement('canvas')
-  canvas.width = THUMBNAIL_WIDTH * 2
-  canvas.height = THUMBNAIL_HEIGHT * 2
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return Promise.resolve(null)
-
-  const sourceWidth = video.videoWidth || canvas.width
-  const sourceHeight = video.videoHeight || canvas.height
-  const scale = Math.max(
-    canvas.width / sourceWidth,
-    canvas.height / sourceHeight,
-  )
-  const width = sourceWidth * scale
-  const height = sourceHeight * scale
-  const x = (canvas.width - width) / 2
-  const y = (canvas.height - height) / 2
-
-  ctx.drawImage(video, x, y, width, height)
-
-  return new Promise((resolve) => {
+function canvasToObjectUrl(canvas: HTMLCanvasElement) {
+  return new Promise<string | null>((resolve) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
@@ -191,6 +99,30 @@ function drawVideoFrame(video: HTMLVideoElement): Promise<string | null> {
       0.72,
     )
   })
+}
+
+function drawVideoSample(sample: VideoSample): Promise<string | null> {
+  const canvas = document.createElement('canvas')
+  canvas.width = THUMBNAIL_WIDTH * 2
+  canvas.height = THUMBNAIL_HEIGHT * 2
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return Promise.resolve(null)
+
+  const sourceWidth = sample.displayWidth || canvas.width
+  const sourceHeight = sample.displayHeight || canvas.height
+  const scale = Math.max(
+    canvas.width / sourceWidth,
+    canvas.height / sourceHeight,
+  )
+  const width = sourceWidth * scale
+  const height = sourceHeight * scale
+  const x = (canvas.width - width) / 2
+  const y = (canvas.height - height) / 2
+
+  sample.draw(ctx, x, y, width, height)
+
+  return canvasToObjectUrl(canvas)
 }
 
 function sourceFrameAt(request: VideoStillRequest, index: number) {
@@ -209,138 +141,81 @@ function stillStripCacheKey(request: VideoStillRequest) {
   ].join(':')
 }
 
-const SOURCE_POOL_IDLE_TEARDOWN_MS = 5000
-
-type StillsJob = {
-  request: VideoStillRequest
-  signal: AbortSignal
-  resolve: (stills: VideoStill[]) => void
-  reject: (error: unknown) => void
-}
-
-type SourcePool = {
-  src: string
-  video: HTMLVideoElement | null
-  queue: StillsJob[]
-  busy: boolean
-  idleTimer: number | null
-}
-
-const sourcePools = new Map<string, SourcePool>()
-
-function cancelPoolTeardown(pool: SourcePool) {
-  if (pool.idleTimer != null) {
-    window.clearTimeout(pool.idleTimer)
-    pool.idleTimer = null
-  }
-}
-
-function getOrCreatePool(src: string): SourcePool {
-  let pool = sourcePools.get(src)
-  if (!pool) {
-    pool = { src, video: null, queue: [], busy: false, idleTimer: null }
-    sourcePools.set(src, pool)
-  }
-  cancelPoolTeardown(pool)
-  return pool
-}
-
-function teardownPool(pool: SourcePool) {
-  if (pool.video) {
-    pool.video.removeAttribute('src')
-    pool.video.load()
-    pool.video = null
-  }
-  if (pool.queue.length === 0 && !pool.busy) {
-    sourcePools.delete(pool.src)
-  }
-}
-
-function schedulePoolTeardown(pool: SourcePool) {
-  cancelPoolTeardown(pool)
-  pool.idleTimer = window.setTimeout(() => {
-    pool.idleTimer = null
-    if (pool.busy || pool.queue.length > 0) return
-    teardownPool(pool)
-  }, SOURCE_POOL_IDLE_TEARDOWN_MS)
-}
-
-function ensurePoolVideo(pool: SourcePool): HTMLVideoElement {
-  if (pool.video) return pool.video
-  const video = document.createElement('video')
-  video.preload = 'metadata'
-  video.muted = true
-  video.playsInline = true
-  video.crossOrigin = 'anonymous'
-  video.src = pool.src
-  pool.video = video
-  return video
-}
-
-async function runJob(pool: SourcePool, job: StillsJob) {
-  const stills: VideoStill[] = []
-  try {
-    if (job.signal.aborted) throw abortError()
-    const video = ensurePoolVideo(pool)
-    await waitForMetadata(video, job.signal)
-
-    const maxTime = Number.isFinite(video.duration)
-      ? Math.max(0, video.duration - 0.05)
-      : Math.max(0, job.request.sourceDurationInFrames / job.request.fps)
-
-    for (let index = 0; index < job.request.count; index += 1) {
-      if (job.signal.aborted) throw abortError()
-
-      const frame = sourceFrameAt(job.request, index)
-      const timeInSeconds = Math.min(
-        maxTime,
-        Math.max(0, frame / job.request.fps),
-      )
-      await seekTo(video, timeInSeconds, job.signal)
-      const src = await drawVideoFrame(video)
-      if (job.signal.aborted) {
-        if (src) URL.revokeObjectURL(src)
-        throw abortError()
-      }
-      if (src) stills.push({ src, timeInSeconds })
-    }
-
-    job.resolve(stills)
-  } catch (error) {
-    revokeStills(stills)
-    job.reject(error)
-  }
-}
-
-async function drainPool(pool: SourcePool) {
-  if (pool.busy) return
-  pool.busy = true
-  cancelPoolTeardown(pool)
-  try {
-    while (pool.queue.length > 0) {
-      const job = pool.queue.shift()
-      if (!job) break
-      if (job.signal.aborted) {
-        job.reject(abortError())
-        continue
-      }
-      await runJob(pool, job)
-    }
-  } finally {
-    pool.busy = false
-    if (pool.queue.length === 0) schedulePoolTeardown(pool)
-  }
-}
-
-function generateVideoStills(
+async function generateVideoStills(
   request: VideoStillRequest,
   signal: AbortSignal,
 ): Promise<VideoStill[]> {
-  return new Promise((resolve, reject) => {
-    const pool = getOrCreatePool(request.src)
-    pool.queue.push({ request, signal, resolve, reject })
-    void drainPool(pool)
+  const stills: VideoStill[] = []
+  const fallbackDurationInSeconds = Math.max(
+    0,
+    request.sourceDurationInFrames / request.fps,
+  )
+  if (signal.aborted) throw abortError()
+
+  const { ALL_FORMATS, Input, UrlSource, VideoSampleSink } =
+    await import('mediabunny')
+  const input = new Input({
+    formats: ALL_FORMATS,
+    source: new UrlSource(request.src),
   })
+
+  try {
+    const [durationInSeconds, videoTrack] = await Promise.all([
+      input.computeDuration().catch(() => fallbackDurationInSeconds),
+      input.getPrimaryVideoTrack(),
+    ])
+    if (!videoTrack) {
+      throw new Error('No video track found in the input')
+    }
+    if (signal.aborted) throw abortError()
+
+    const canDecode = await videoTrack.canDecode()
+    if (!canDecode) {
+      throw new Error('This video track cannot be decoded by this browser')
+    }
+
+    const maxTime = Math.max(
+      0,
+      (Number.isFinite(durationInSeconds)
+        ? durationInSeconds
+        : fallbackDurationInSeconds) - 0.05,
+    )
+    const timestamps = Array.from({ length: request.count }, (_, index) => {
+      const frame = sourceFrameAt(request, index)
+      return Math.min(maxTime, Math.max(0, frame / request.fps))
+    })
+
+    const sink = new VideoSampleSink(videoTrack)
+    for await (const sample of sink.samplesAtTimestamps(timestamps)) {
+      if (signal.aborted) {
+        sample?.close()
+        throw abortError()
+      }
+      if (!sample) continue
+
+      let src: string | null = null
+      const timeInSeconds = sample.timestamp
+      try {
+        src = await drawVideoSample(sample)
+      } finally {
+        sample.close()
+      }
+
+      if (signal.aborted) {
+        if (src) URL.revokeObjectURL(src)
+        throw abortError()
+      }
+
+      if (src) stills.push({ src, timeInSeconds })
+    }
+
+    return stills
+  } catch (error) {
+    revokeStills(stills)
+    throw error
+  } finally {
+    input.dispose()
+  }
 }
 
 function loadVideoStills(

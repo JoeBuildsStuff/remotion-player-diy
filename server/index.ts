@@ -105,7 +105,7 @@ app.post('/api/upload', async (c) => {
     return c.text('Missing "file" field in multipart body', 400)
   }
 
-  const safeName = file.name.replace(/[^\w.\-]+/g, '_') || 'upload.bin'
+  const safeName = file.name.replace(/[^\w.-]+/g, '_') || 'upload.bin'
   const id = randomUUID()
   const filename = `${id}-${safeName}`
   const dest = path.join(SOURCES_DIR, filename)
@@ -126,7 +126,7 @@ app.post('/api/upload', async (c) => {
 const ExportSettingsSchema = z.object({
   quality: z.number().min(1).max(100),
   audioBitrateKbps: z.number().int().min(64).max(320),
-  resolutionScale: z.number().int().min(25).max(100),
+  resolutionScale: z.number().int().min(25).max(400),
 })
 
 const RenderRequestSchema = z.object({

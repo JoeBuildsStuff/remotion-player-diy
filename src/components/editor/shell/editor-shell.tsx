@@ -23,7 +23,7 @@ export function EditorShell() {
       <Toolbar />
 
       <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1">
-        <ResizablePanel defaultSize="68%" minSize="35%">
+        <ResizablePanel defaultSize="76%" minSize="35%">
           <SidebarProvider
             defaultOpen
             className="relative h-full min-h-0 flex-1"
@@ -49,7 +49,7 @@ export function EditorShell() {
 
         <ResizableHandle />
 
-        <ResizablePanel defaultSize="32%" minSize="24%" maxSize="60%">
+        <ResizablePanel defaultSize="24%" minSize="24%" maxSize="60%">
           <div className="flex h-full min-h-0 flex-col">
             <TransportBar />
             <Timeline />
