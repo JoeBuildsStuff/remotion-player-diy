@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.0...v1.0.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* Enhance build metadata integration by adding version, commit SHA, branch, and build time to the Dockerfile and Vite configuration. Update README to reflect new project info display in the settings menu. Modify GitHub Actions workflow to pass build args for metadata during image publishing. ([39fa960](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/39fa960f5791f1cb58542b6b8881c91e59ae7999))
+
 # 1.0.0 (2026-05-10)
 
 
