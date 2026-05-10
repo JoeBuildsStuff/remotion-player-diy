@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 import type { Clip } from '../model/editor-types'
-import { AudioWaveform } from './audio-waveform'
+import { AudioWaveform } from '../media/audio-waveform'
 import {
   CLIP_VERTICAL_INSET,
   COMPACT_CLIP_HEIGHT,

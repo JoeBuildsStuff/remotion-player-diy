@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Check, ChevronDown, Minus, Plus, Share2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -63,7 +63,6 @@ type ShareQualityValue = (typeof SHARE_QUALITY_OPTIONS)[number]['value']
 
 export function Toolbar() {
   const {
-    addFiles,
     addTextClip,
     clips,
     exportSettings,
@@ -77,7 +76,6 @@ export function Toolbar() {
     zoomPreviewIn,
     zoomPreviewOut,
   } = useEditor()
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [renderOpen, setRenderOpen] = useState(false)
   const [shareQuality, setShareQuality] = useState<ShareQualityValue>('1080')
   const selectedShareQuality =
@@ -105,25 +103,12 @@ export function Toolbar() {
 
   return (
     <header className="grid h-11 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-2">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="video/*,audio/*,image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          if (e.target.files) void addFiles(e.target.files)
-          e.target.value = ''
-        }}
-      />
-
       <ToolbarLogo />
 
       <ToolbarActionGroups
         addTextClip={addTextClip}
         showCanvasRulers={showCanvasRulers}
         toggleCanvasRulers={toggleCanvasRulers}
-        onImportMedia={() => fileInputRef.current?.click()}
       />
 
       <div className="flex items-center justify-self-end gap-1.5">

@@ -1,15 +1,10 @@
 import {
-  Download,
-  Image as ImageIcon,
   MousePointer2,
-  Music,
   Redo2,
   Ruler,
-  Save,
   Square,
   Type,
   Undo2,
-  Video,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -24,12 +19,10 @@ export function ToolbarActionGroups({
   addTextClip,
   showCanvasRulers,
   toggleCanvasRulers,
-  onImportMedia,
 }: {
   addTextClip: () => void
   showCanvasRulers: boolean
   toggleCanvasRulers: () => void
-  onImportMedia: () => void
 }) {
   return (
     <div className="flex items-center justify-self-center gap-1.5">
@@ -100,48 +93,6 @@ export function ToolbarActionGroups({
             <Button
               variant="outline"
               size="icon"
-              aria-label="Image"
-              className="h-7 w-7"
-            >
-              <ImageIcon className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Image</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Video"
-              className="h-7 w-7"
-            >
-              <Video className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Video</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Audio"
-              className="h-7 w-7"
-            >
-              <Music className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Audio</TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
-
-      <ButtonGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
               aria-label="Undo"
               className="h-7 w-7"
             >
@@ -162,35 +113,6 @@ export function ToolbarActionGroups({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Redo</TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
-
-      <ButtonGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Save"
-              className="h-7 w-7"
-            >
-              <Save className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Save</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onImportMedia}
-              aria-label="Import media"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Import media</TooltipContent>
         </Tooltip>
       </ButtonGroup>
     </div>

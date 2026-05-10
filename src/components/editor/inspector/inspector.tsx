@@ -17,7 +17,10 @@ export function Inspector() {
     durationInFrames,
     fps,
     clips,
+    addFiles,
+    removeClip,
     selectedClipId,
+    setSelectedClipId,
   } = useEditor()
 
   const selectedClip = selectedClipId
@@ -39,6 +42,10 @@ export function Inspector() {
             durationInFrames={durationInFrames}
             fps={fps}
             clips={clips}
+            addFiles={addFiles}
+            removeClip={removeClip}
+            selectedClipId={selectedClipId}
+            setSelectedClipId={setSelectedClipId}
             setWidth={setWidth}
             setHeight={setHeight}
           />

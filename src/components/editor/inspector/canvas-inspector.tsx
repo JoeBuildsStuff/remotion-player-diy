@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  Clapperboard,
   Clock3,
   PanelTop,
   RectangleHorizontal,
@@ -29,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Clip } from '../model/editor-types'
+import { MediaInspector } from './media-inspector'
 
 function formatDuration(frames: number, fps: number) {
   const totalSeconds = frames / fps
@@ -86,6 +86,10 @@ export function CanvasInspector({
   durationInFrames,
   fps,
   clips,
+  addFiles,
+  removeClip,
+  selectedClipId,
+  setSelectedClipId,
   setWidth,
   setHeight,
 }: {
@@ -94,6 +98,10 @@ export function CanvasInspector({
   durationInFrames: number
   fps: number
   clips: Clip[]
+  addFiles: (files: FileList | File[]) => Promise<void>
+  removeClip: (id: string) => void
+  selectedClipId: string | null
+  setSelectedClipId: (id: string | null) => void
   setWidth: (value: number) => void
   setHeight: (value: number) => void
 }) {
@@ -115,7 +123,7 @@ export function CanvasInspector({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
         <div className="flex min-w-0 flex-col gap-4 p-3">
           <section className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -239,27 +247,13 @@ export function CanvasInspector({
             </p>
           </section>
 
-          <section className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Clapperboard className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>Clips</span>
-            </Label>
-            {clips.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No media yet.</p>
-            ) : (
-              <ul className="space-y-1">
-                {clips.map((clip) => (
-                  <li
-                    key={clip.id}
-                    className="truncate rounded bg-secondary/40 px-2 py-1 text-xs text-foreground"
-                    title={clip.name}
-                  >
-                    {clip.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <MediaInspector
+            clips={clips}
+            addFiles={addFiles}
+            removeClip={removeClip}
+            selectedClipId={selectedClipId}
+            setSelectedClipId={setSelectedClipId}
+          />
         </div>
       </ScrollArea>
     </div>

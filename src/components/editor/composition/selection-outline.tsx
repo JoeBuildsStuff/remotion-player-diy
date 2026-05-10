@@ -107,7 +107,6 @@ export function SelectionOutline({
       }}
       onClick={(e) => {
         e.stopPropagation()
-        if (isSelected) setSelectedClipId(null)
       }}
       style={{
         position: 'absolute',

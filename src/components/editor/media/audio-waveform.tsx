@@ -41,15 +41,17 @@ export function AudioWaveform({
   height: number
   color?: string
 }) {
-  const [audioData, setAudioData] = useState<MediaUtilsAudioData | null>(null)
+  const [audioDataState, setAudioDataState] = useState<{
+    src: string
+    data: MediaUtilsAudioData
+  } | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    setAudioData(null)
     loadAudioData(src)
       .then((data) => {
-        if (!cancelled) setAudioData(data)
+        if (!cancelled) setAudioDataState({ src, data })
       })
       .catch(() => {})
     return () => {
@@ -59,6 +61,8 @@ export function AudioWaveform({
 
   const barStep = WAVEFORM_BAR_WIDTH + WAVEFORM_BAR_GAP
   const bucketCount = Math.max(1, Math.ceil(width / barStep))
+  const audioData =
+    audioDataState?.src === src ? audioDataState.data : null
 
   const peaks = useMemo(() => {
     if (!audioData) return null
@@ -98,7 +102,7 @@ export function AudioWaveform({
       )
       ctx.fill()
     }
-  }, [peaks, width, height, color])
+  }, [peaks, width, height, color, barStep])
 
   return (
     <canvas
