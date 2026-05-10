@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.3...v1.1.0) (2026-05-10)
+
+
+### Features
+
+* Integrate color picker component in inspector controls for enhanced color selection. Refactor ColorInput to utilize Popover and ColorPicker for improved UI and user experience. ([5eb6a57](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/5eb6a5769866905519c794cf4a96e5ba8b4d883b))
+
 ## [1.0.3](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.2...v1.0.3) (2026-05-10)
 
 
