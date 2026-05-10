@@ -31,7 +31,7 @@ export function Section({
       <div className="relative">
         <AccordionTrigger
           onClick={() => onTriggerClick?.(value)}
-          className={`mx-2 my-px min-h-8 overflow-hidden rounded-[calc(var(--radius-sm)+2px)] px-2 py-2 text-xs font-semibold text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:no-underline group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:**:data-section-label:hidden group-data-[collapsible=icon]:**:data-[slot=accordion-trigger-icon]:hidden ${
+          className={`mx-2 my-px min-h-7 overflow-hidden rounded-[calc(var(--radius-sm)+2px)] px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:no-underline group-data-[collapsible=icon]:size-7! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1.5! group-data-[collapsible=icon]:**:data-section-label:hidden group-data-[collapsible=icon]:**:data-[slot=accordion-trigger-icon]:hidden ${
             headerAction
               ? 'pr-8 group-data-[collapsible=icon]:pr-2!'
               : ''
@@ -48,7 +48,7 @@ export function Section({
           </div>
         ) : null}
       </div>
-      <AccordionContent className="min-w-0 px-3 group-data-[collapsible=icon]:hidden">{children}</AccordionContent>
+      <AccordionContent className="min-w-0 px-3 pt-1 group-data-[collapsible=icon]:hidden">{children}</AccordionContent>
     </AccordionItem>
   )
 }
