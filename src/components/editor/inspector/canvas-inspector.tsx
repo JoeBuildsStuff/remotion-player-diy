@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react'
 import {
+  Clapperboard,
+  Clock3,
+  Download,
+  PanelTop,
   RectangleHorizontal,
   RectangleVertical,
   RotateCw,
@@ -130,7 +134,10 @@ export function CanvasInspector({
       <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
         <div className="flex min-w-0 flex-col gap-4 p-3">
           <section className="space-y-2">
-            <Label className="">Canvas</Label>
+            <Label className="flex items-center gap-2">
+              <PanelTop className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>Canvas</span>
+            </Label>
             <Select
               value={selectedCanvasPreset?.id ?? 'custom'}
               onValueChange={(value) => {
@@ -239,14 +246,20 @@ export function CanvasInspector({
           </section>
 
           <section className="space-y-1">
-            <Label className="">Duration</Label>
+            <Label className="flex items-center gap-2">
+              <Clock3 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>Duration</span>
+            </Label>
             <p className="font-mono text-xs text-muted-foreground">
               {formatDuration(durationInFrames, fps)}
             </p>
           </section>
 
           <section className="space-y-2">
-            <Label className="">Clips</Label>
+            <Label className="flex items-center gap-2">
+              <Clapperboard className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>Clips</span>
+            </Label>
             {clips.length === 0 ? (
               <p className="text-xs text-muted-foreground">No media yet.</p>
             ) : (
@@ -265,7 +278,10 @@ export function CanvasInspector({
           </section>
 
           <section className="w-full space-y-2">
-            <Label className="">Export</Label>
+            <Label className="flex items-center gap-2">
+              <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>Export</span>
+            </Label>
             <Select value="mp4">
               <SelectTrigger className="w-full">
                 <SelectValue />
