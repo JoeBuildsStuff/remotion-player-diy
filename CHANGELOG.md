@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.2...v1.0.3) (2026-05-10)
+
+
+### Bug Fixes
+
+* Adjust styles in inspector controls for improved UI consistency. Modify AccordionTrigger and AccordionContent padding and height for better alignment and visual appeal. ([75e9161](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/75e91617ef29dbe32eadb2ed6ad4a6008ead863f))
+
 ## [1.0.2](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.1...v1.0.2) (2026-05-10)
 
 
