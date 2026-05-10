@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   AudioLines,
-  Clapperboard,
   Image as ImageIcon,
   Pause,
   Play,
-  Plus,
   Trash,
   Type,
   Video,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +22,6 @@ import type { Clip } from '../model/editor-types'
 
 type MediaInspectorProps = {
   clips: Clip[]
-  addFiles: (files: FileList | File[]) => Promise<void>
   removeClip: (id: string) => void
   selectedClipId: string | null
   setSelectedClipId: (id: string | null) => void
@@ -99,13 +95,11 @@ function ClipTypeBadge({ type }: { type: Clip['type'] }) {
 
 export function MediaInspector({
   clips,
-  addFiles,
   removeClip,
   selectedClipId,
   setSelectedClipId,
 }: MediaInspectorProps) {
   const [previewingClipId, setPreviewingClipId] = useState<string | null>(null)
-  const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const previewMediaRef = useRef<HTMLMediaElement | null>(null)
 
   const stopPreview = () => {
@@ -156,38 +150,6 @@ export function MediaInspector({
 
   return (
     <section className="space-y-2">
-      <input
-        ref={mediaInputRef}
-        type="file"
-        accept="video/*,audio/*,image/*"
-        multiple
-        className="hidden"
-        onChange={(event) => {
-          if (event.target.files) void addFiles(event.target.files)
-          event.target.value = ''
-        }}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <Label className="flex items-center gap-2">
-          <Clapperboard className="size-3.5 shrink-0 text-muted-foreground" />
-          <span>Clips</span>
-        </Label>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Add media"
-              className="size-7"
-              onClick={() => mediaInputRef.current?.click()}
-            >
-              <Plus className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Add media</TooltipContent>
-        </Tooltip>
-      </div>
       {clips.length === 0 ? (
         <p className="text-xs text-muted-foreground">No clips yet.</p>
       ) : (

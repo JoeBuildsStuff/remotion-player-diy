@@ -1,13 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Clock3,
+  Clapperboard,
   PanelTop,
+  Plus,
   RectangleHorizontal,
   RectangleVertical,
   RotateCw,
   Square,
 } from 'lucide-react'
 
+import { Accordion } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import {
   InputGroup,
@@ -15,7 +18,6 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group'
-import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
@@ -27,7 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useSidebar } from '@/components/ui/sidebar'
 import type { Clip } from '../model/editor-types'
+import { Section } from './inspector-controls'
 import { MediaInspector } from './media-inspector'
 
 function formatDuration(frames: number, fps: number) {
@@ -106,6 +115,9 @@ export function CanvasInspector({
   setHeight: (value: number) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
+  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips'])
+  const mediaInputRef = useRef<HTMLInputElement | null>(null)
+  const { state: sidebarState, setOpen } = useSidebar()
 
   const selectedCanvasPreset = useMemo(() => {
     const selected = CANVAS_SIZE_OPTIONS.find(
@@ -123,138 +135,194 @@ export function CanvasInspector({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <input
+        ref={mediaInputRef}
+        type="file"
+        accept="video/*,audio/*,image/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          if (event.target.files) void addFiles(event.target.files)
+          event.target.value = ''
+        }}
+      />
       <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
-        <div className="flex min-w-0 flex-col gap-4 p-3">
-          <section className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <PanelTop className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>Canvas</span>
-            </Label>
-            <Select
-              value={selectedCanvasPreset?.id ?? 'custom'}
-              onValueChange={(value) => {
-                if (value === 'custom') return
+        <Accordion
+          type="multiple"
+          value={openSections}
+          onValueChange={setOpenSections}
+          className="min-w-0 rounded-none border-0"
+        >
+          <Section
+            value="canvas"
+            title="Canvas"
+            icon={PanelTop}
+            onTriggerClick={(value) => {
+              if (sidebarState !== 'collapsed') return
+              setOpen(true)
+              setOpenSections([value])
+            }}
+          >
+            <div className="space-y-2">
+              <Select
+                value={selectedCanvasPreset?.id ?? 'custom'}
+                onValueChange={(value) => {
+                  if (value === 'custom') return
 
-                const preset = CANVAS_SIZE_OPTIONS.find(
-                  (option) => option.id === value,
-                )
-                if (!preset) return
+                  const preset = CANVAS_SIZE_OPTIONS.find(
+                    (option) => option.id === value,
+                  )
+                  if (!preset) return
 
-                setSelectedCanvasPresetId(preset.id)
-                setWidth(preset.width)
-                setHeight(preset.height)
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select size">
-                  {selectedCanvasPreset ? (
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <CanvasPresetIcon
-                        width={selectedCanvasPreset.width}
-                        height={selectedCanvasPreset.height}
-                      />
-                      <span className="truncate">
-                        {selectedCanvasPreset.name}
-                      </span>
-                      <span className="shrink-0 text-muted-foreground">
-                        {selectedCanvasPreset.ratio}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Custom</span>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                align="end"
-                className="w-80 max-w-[calc(100vw-1rem)]"
-              >
-                <SelectItem value="custom">Custom</SelectItem>
-                <SelectSeparator />
-                {CANVAS_SIZE_PRESETS.map((group, groupIndex) => (
-                  <SelectGroup key={group.label}>
-                    <SelectLabel>{group.label}</SelectLabel>
-                    {group.options.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        <span className="flex min-w-0 flex-1 items-center gap-2 pr-5">
-                          <CanvasPresetIcon
-                            width={option.width}
-                            height={option.height}
-                          />
-                          <span className="min-w-0 flex-1 truncate">
-                            {option.name}
-                          </span>
-                          <span className="shrink-0 text-muted-foreground">
-                            {option.size} · {option.ratio}
-                          </span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                    {groupIndex < CANVAS_SIZE_PRESETS.length - 1 ? (
-                      <SelectSeparator />
-                    ) : null}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1.5">
-              <InputGroup className="flex-1">
-                <InputGroupAddon>
-                  <InputGroupText>W</InputGroupText>
-                </InputGroupAddon>
-                <InputGroupInput
-                  value={width}
-                  onChange={(e) => {
-                    setSelectedCanvasPresetId('custom')
-                    setWidth(Number(e.target.value) || 0)
-                  }}
-                />
-              </InputGroup>
-              <InputGroup className="flex-1">
-                <InputGroupAddon>
-                  <InputGroupText>H</InputGroupText>
-                </InputGroupAddon>
-                <InputGroupInput
-                  value={height}
-                  onChange={(e) => {
-                    setSelectedCanvasPresetId('custom')
-                    setHeight(Number(e.target.value) || 0)
-                  }}
-                />
-              </InputGroup>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSelectedCanvasPresetId('custom')
-                  setWidth(height)
-                  setHeight(width)
+                  setSelectedCanvasPresetId(preset.id)
+                  setWidth(preset.width)
+                  setHeight(preset.height)
                 }}
-                className="h-8 w-8"
               >
-                <RotateCw className="size-3" />
-              </Button>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select size">
+                    {selectedCanvasPreset ? (
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <CanvasPresetIcon
+                          width={selectedCanvasPreset.width}
+                          height={selectedCanvasPreset.height}
+                        />
+                        <span className="truncate">
+                          {selectedCanvasPreset.name}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">
+                          {selectedCanvasPreset.ratio}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Custom</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  align="end"
+                  className="w-80 max-w-[calc(100vw-1rem)]"
+                >
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectSeparator />
+                  {CANVAS_SIZE_PRESETS.map((group, groupIndex) => (
+                    <SelectGroup key={group.label}>
+                      <SelectLabel>{group.label}</SelectLabel>
+                      {group.options.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          <span className="flex min-w-0 flex-1 items-center gap-2 pr-5">
+                            <CanvasPresetIcon
+                              width={option.width}
+                              height={option.height}
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                              {option.name}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground">
+                              {option.size} · {option.ratio}
+                            </span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                      {groupIndex < CANVAS_SIZE_PRESETS.length - 1 ? (
+                        <SelectSeparator />
+                      ) : null}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1.5">
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>W</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    value={width}
+                    onChange={(e) => {
+                      setSelectedCanvasPresetId('custom')
+                      setWidth(Number(e.target.value) || 0)
+                    }}
+                  />
+                </InputGroup>
+                <InputGroup className="flex-1">
+                  <InputGroupAddon>
+                    <InputGroupText>H</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    value={height}
+                    onChange={(e) => {
+                      setSelectedCanvasPresetId('custom')
+                      setHeight(Number(e.target.value) || 0)
+                    }}
+                  />
+                </InputGroup>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSelectedCanvasPresetId('custom')
+                    setWidth(height)
+                    setHeight(width)
+                  }}
+                  className="h-8 w-8"
+                >
+                  <RotateCw className="size-3" />
+                </Button>
+              </div>
             </div>
-          </section>
+          </Section>
 
-          <section className="space-y-1">
-            <Label className="flex items-center gap-2">
-              <Clock3 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>Duration</span>
-            </Label>
+          <Section
+            value="duration"
+            title="Duration"
+            icon={Clock3}
+            onTriggerClick={(value) => {
+              if (sidebarState !== 'collapsed') return
+              setOpen(true)
+              setOpenSections([value])
+            }}
+          >
             <p className="font-mono text-xs text-muted-foreground">
               {formatDuration(durationInFrames, fps)}
             </p>
-          </section>
+          </Section>
 
-          <MediaInspector
-            clips={clips}
-            addFiles={addFiles}
-            removeClip={removeClip}
-            selectedClipId={selectedClipId}
-            setSelectedClipId={setSelectedClipId}
-          />
-        </div>
+          <Section
+            value="clips"
+            title="Clips"
+            icon={Clapperboard}
+            onTriggerClick={(value) => {
+              if (sidebarState !== 'collapsed') return
+              setOpen(true)
+              setOpenSections([value])
+            }}
+            headerAction={(
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Add media"
+                    className="size-7"
+                    onClick={() => mediaInputRef.current?.click()}
+                  >
+                    <Plus className="size-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add media</TooltipContent>
+              </Tooltip>
+            )}
+            last
+          >
+            <MediaInspector
+              clips={clips}
+              removeClip={removeClip}
+              selectedClipId={selectedClipId}
+              setSelectedClipId={setSelectedClipId}
+            />
+          </Section>
+        </Accordion>
       </ScrollArea>
     </div>
   )

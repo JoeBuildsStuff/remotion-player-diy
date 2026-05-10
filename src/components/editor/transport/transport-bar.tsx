@@ -86,7 +86,7 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant="secondary"
               size="icon"
               aria-label="Split"
               disabled={!canSplit}
@@ -100,7 +100,7 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant="secondary"
               size="icon"
               aria-label="Delete selected item"
               disabled={!selectedClip}
@@ -156,7 +156,7 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isLooping ? 'secondary' : 'outline'}
+              variant={isLooping ? 'secondary' : 'secondary'}
               size="icon"
               aria-label="Loop"
               aria-pressed={isLooping}
@@ -171,7 +171,7 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant="secondary"
               size="icon"
               aria-label="Volume"
               className="h-7 w-7"
@@ -184,7 +184,7 @@ export function TransportBar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant="secondary"
               size="icon"
               aria-label="Fullscreen"
               disabled={clips.length === 0}

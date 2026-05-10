@@ -11,27 +11,44 @@ export function Section({
   value,
   title,
   icon: Icon,
+  headerAction,
   children,
-  last,
+  onTriggerClick,
 }: {
   value: string
   title: string
   icon?: LucideIcon
+  headerAction?: React.ReactNode
   children: React.ReactNode
   last?: boolean
+  onTriggerClick?: (value: string) => void
 }) {
   return (
     <AccordionItem
       value={value}
-      className={`min-w-0 border-muted-foreground/20 data-open:bg-transparent ${last ? 'border-b' : ''}`}
+      className="min-w-0 border-0 not-last:border-b-0 data-open:bg-transparent"
     >
-      <AccordionTrigger className="text-xs font-semibold text-foreground hover:no-underline">
-        <span className="flex min-w-0 items-center gap-2">
-          {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-          <span className="truncate">{title}</span>
-        </span>
-      </AccordionTrigger>
-      <AccordionContent className="min-w-0 px-1">{children}</AccordionContent>
+      <div className="relative">
+        <AccordionTrigger
+          onClick={() => onTriggerClick?.(value)}
+          className={`mx-2 my-px min-h-8 overflow-hidden rounded-[calc(var(--radius-sm)+2px)] px-2 py-2 text-xs font-semibold text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:no-underline group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:**:data-section-label:hidden group-data-[collapsible=icon]:**:data-[slot=accordion-trigger-icon]:hidden ${
+            headerAction
+              ? 'pr-8 group-data-[collapsible=icon]:pr-2!'
+              : ''
+          }`}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+            <span data-section-label className="truncate">{title}</span>
+          </span>
+        </AccordionTrigger>
+        {headerAction ? (
+          <div className="absolute top-1/2 right-2 z-10 -translate-y-1/2 group-data-[collapsible=icon]:hidden">
+            {headerAction}
+          </div>
+        ) : null}
+      </div>
+      <AccordionContent className="min-w-0 px-3 group-data-[collapsible=icon]:hidden">{children}</AccordionContent>
     </AccordionItem>
   )
 }

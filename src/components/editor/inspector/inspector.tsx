@@ -1,11 +1,17 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import {
+  Clapperboard,
+} from 'lucide-react'
 
 import { useEditor } from '../model/editor-context-value'
-import { EditorLogo } from '../controls/editor-logo'
 import { CanvasInspector } from './canvas-inspector'
 import { ClipInspector } from './clip-inspector'
 
@@ -30,13 +36,27 @@ export function Inspector() {
 
   return (
     <Sidebar
-      collapsible="offcanvas"
-      className="absolute h-full border-r"
+      collapsible="icon"
+      className="absolute h-full border-r-0"
     >
+      <SidebarHeader className="bg-background">
+      <SidebarMenu>
+    <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <Clapperboard className="size-6" strokeWidth={1.5}/>
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">Remotion Player DIY</span>
+            </div>
+          </SidebarMenuButton>
+    </SidebarMenuItem>
+  </SidebarMenu>
+      </SidebarHeader>
       <SidebarContent className="bg-background text-foreground">
-        <div className="px-2 py-1">
-          <EditorLogo />
-        </div>
         {selectedClip ? (
           <ClipInspector clip={selectedClip} />
         ) : (

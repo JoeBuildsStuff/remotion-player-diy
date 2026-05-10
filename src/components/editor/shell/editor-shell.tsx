@@ -27,21 +27,21 @@ export function EditorShell() {
             style={
               {
                 '--sidebar-width': '18rem',
-                '--sidebar-width-icon': '0rem',
+                '--sidebar-width-icon': '3rem',
               } as CSSProperties
             }
           >
             <Inspector />
             <SidebarInset className="min-w-0 bg-transparent">
+              <header className="absolute left-0 top-0 z-20 flex h-10 shrink-0 items-center gap-2 px-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-10">
+                <SidebarTrigger
+                  aria-label="Toggle inspector"
+                  size="icon"
+                  className="bg-secondary"
+                />
+              </header>
               <Preview />
             </SidebarInset>
-            <div className="absolute left-2 top-2 z-20 transition-[left] duration-200 ease-linear md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)+0.5rem)]">
-              <SidebarTrigger
-                aria-label="Toggle inspector"
-                size="icon"
-                className="bg-secondary"
-              />
-            </div>
           </SidebarProvider>
         </ResizablePanel>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronDown, Maximize2, Minus, Plus, Share2 } from 'lucide-react'
+import { ArrowRight, ChevronDown, Maximize2, Minus, Plus, Share2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -243,7 +243,7 @@ function PreviewShareMenu() {
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" className="gap-1.5">
             <Share2 />
-            <span className="text-muted-foreground hidden sm:inline">Share</span>
+            <span className=" hidden sm:inline">Share</span>
        
             <ChevronDown className="text-muted-foreground" />
           </Button>
@@ -285,8 +285,8 @@ function PreviewShareMenu() {
                 : 'Server rendering is disabled on this public demo. Self-host to export.'
             }
           >
-            <Check />
             Render
+            <ArrowRight />
           </Button>
           {RENDERING_AVAILABLE ? null : (
             <p className="px-2 pt-1 pb-1 text-xs text-muted-foreground">

@@ -11,13 +11,14 @@ import {
   AlignEndVertical,
   AlignStartHorizontal,
   AlignStartVertical,
+  AudioLines,
   Captions,
   Clapperboard,
   Cloud,
   Clock3,
   Crop,
   DraftingCompass,
-  FileVideo,
+  Image as ImageIcon,
   Link2,
   PaintBucket,
   PanelTop,
@@ -26,6 +27,7 @@ import {
   Square,
   Type,
   Squircle,
+  Video,
   Volume2,
 } from 'lucide-react'
 
@@ -35,6 +37,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useSidebar } from '@/components/ui/sidebar'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -223,6 +226,22 @@ export function ClipInspector({ clip }: Props) {
     updateClip,
   } = useEditor()
   const [lockAspectRatio, setLockAspectRatio] = useState(false)
+  const [openSections, setOpenSections] = useState([
+    'source',
+    'timing',
+    'layout',
+    'fill',
+    'crop',
+    'video',
+    'audio',
+  ])
+  const { state: sidebarState, setOpen } = useSidebar()
+
+  const handleCollapsedSectionTrigger = (value: string) => {
+    if (sidebarState !== 'collapsed') return
+    setOpen(true)
+    setOpenSections([value])
+  }
 
   const horizontalAlignment = useMemo(() => {
     if (clip.x === 0) return 'left'
@@ -249,6 +268,13 @@ export function ClipInspector({ clip }: Props) {
 
   const secondsToFrames = (seconds: number) => Math.round(seconds * fps)
   const framesToSeconds = (frames: number) => frames / fps
+  const sourceSectionIcon = clip.type === 'video'
+    ? Video
+    : clip.type === 'audio'
+      ? AudioLines
+      : clip.type === 'image'
+        ? ImageIcon
+        : Type
 
   const alignHorizontally = (value: string) => {
     if (!value) return
@@ -344,13 +370,19 @@ export function ClipInspector({ clip }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
         <Accordion
           type="multiple"
-          defaultValue={['source', 'timing', 'layout', 'fill', 'crop', 'video', 'audio']}
+          value={openSections}
+          onValueChange={setOpenSections}
           className="min-w-0 rounded-none border-0"
         >
-          <Section value="source" title="Source" icon={FileVideo}>
+          <Section
+            value="source"
+            title="Source"
+            icon={sourceSectionIcon}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="min-w-0 space-y-1">
               <p className="w-full min-w-0 truncate text-xs text-foreground" title={clip.name}>
                 {clip.name}
@@ -367,7 +399,12 @@ export function ClipInspector({ clip }: Props) {
             </div>
           </Section>
 
-        <Section value="timing" title="Timing" icon={Clock3}>
+        <Section
+          value="timing"
+          title="Timing"
+          icon={Clock3}
+          onTriggerClick={handleCollapsedSectionTrigger}
+        >
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Timeline</Label>
@@ -469,7 +506,12 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="layout" title="Layout" icon={PanelTop}>
+        <Section
+          value="layout"
+          title="Layout"
+          icon={PanelTop}
+          onTriggerClick={handleCollapsedSectionTrigger}
+        >
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Alignment</Label>
@@ -638,7 +680,12 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="fill" title="Fill" icon={PaintBucket}>
+        <Section
+          value="fill"
+          title="Fill"
+          icon={PaintBucket}
+          onTriggerClick={handleCollapsedSectionTrigger}
+        >
           <div className="space-y-3">
             <SliderRow
               label="Opacity"
@@ -668,7 +715,12 @@ export function ClipInspector({ clip }: Props) {
           </div>
         </Section>
 
-        <Section value="crop" title="Crop" icon={Crop}>
+        <Section
+          value="crop"
+          title="Crop"
+          icon={Crop}
+          onTriggerClick={handleCollapsedSectionTrigger}
+        >
           <div className="space-y-3">
             <SliderRow
               label="Left"
@@ -710,7 +762,12 @@ export function ClipInspector({ clip }: Props) {
         </Section>
 
         {clip.type === 'video' && (
-          <Section value="video" title="Video" icon={Clapperboard}>
+          <Section
+            value="video"
+            title="Video"
+            icon={Clapperboard}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <SliderRow
                 label="Playback Rate"
@@ -746,7 +803,12 @@ export function ClipInspector({ clip }: Props) {
         )}
 
         {(clip.type === 'video' || clip.type === 'audio') && (
-          <Section value="audio" title="Audio" icon={Volume2}>
+          <Section
+            value="audio"
+            title="Audio"
+            icon={Volume2}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <Label className="text-xs text-muted-foreground">Muted</Label>
@@ -790,7 +852,13 @@ export function ClipInspector({ clip }: Props) {
         )}
 
         {clip.type === 'video' && (
-          <Section value="captions" title="Captions" icon={Captions} last>
+          <Section
+            value="captions"
+            title="Captions"
+            icon={Captions}
+            onTriggerClick={handleCollapsedSectionTrigger}
+            last
+          >
             <p className="text-xs text-muted-foreground">No captions yet.</p>
           </Section>
         )}
@@ -828,6 +896,20 @@ function TextClipInspector({
   secondsToFrames: (seconds: number) => number
 }) {
   const { updateClip } = useEditor()
+  const { state: sidebarState, setOpen } = useSidebar()
+  const [openSections, setOpenSections] = useState([
+    'layout',
+    'typography',
+    'fill',
+    'stroke',
+    'background',
+    'fade',
+  ])
+  const handleCollapsedSectionTrigger = (value: string) => {
+    if (sidebarState !== 'collapsed') return
+    setOpen(true)
+    setOpenSections([value])
+  }
   const fontSize = clip.fontSize ?? 80
   const lineHeight = clip.lineHeight ?? 1.2
   const letterSpacing = clip.letterSpacing ?? 0
@@ -839,13 +921,19 @@ function TextClipInspector({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full">
+      <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden [&>[data-radix-scroll-area-viewport]>div]:block! [&>[data-radix-scroll-area-viewport]>div]:w-full!">
         <Accordion
           type="multiple"
-          defaultValue={['layout', 'typography', 'fill', 'stroke', 'background', 'fade']}
+          value={openSections}
+          onValueChange={setOpenSections}
           className="min-w-0 rounded-none border-0"
         >
-          <Section value="layout" title="Layout" icon={PanelTop}>
+          <Section
+            value="layout"
+            title="Layout"
+            icon={PanelTop}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Alignment</Label>
@@ -996,7 +1084,12 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="typography" title="Typography" icon={Type}>
+          <Section
+            value="typography"
+            title="Typography"
+            icon={Type}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Font</Label>
@@ -1137,7 +1230,12 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="fill" title="Fill" icon={PaintBucket}>
+          <Section
+            value="fill"
+            title="Fill"
+            icon={PaintBucket}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <SliderRow
                 label="Opacity"
@@ -1154,7 +1252,12 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="stroke" title="Stroke" icon={PenLine}>
+          <Section
+            value="stroke"
+            title="Stroke"
+            icon={PenLine}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Width</Label>
@@ -1182,7 +1285,12 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="background" title="Background" icon={Square}>
+          <Section
+            value="background"
+            title="Background"
+            icon={Square}
+            onTriggerClick={handleCollapsedSectionTrigger}
+          >
             <div className="space-y-3">
               <ColorInput
                 label="Color"
@@ -1234,7 +1342,13 @@ function TextClipInspector({
             </div>
           </Section>
 
-          <Section value="fade" title="Fade" icon={Clock3} last>
+          <Section
+            value="fade"
+            title="Fade"
+            icon={Clock3}
+            onTriggerClick={handleCollapsedSectionTrigger}
+            last
+          >
             <div className="space-y-3">
               <SliderRow
                 label="Fade In"
