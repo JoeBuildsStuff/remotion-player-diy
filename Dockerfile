@@ -40,13 +40,19 @@ ENV NODE_ENV=production \
     DIST_DIR=/app/dist \
     REMOTION_ENTRY=/app/remotion/index.ts
 
-# tini for proper signal handling, ffmpeg for muxing, ca-certs for HTTPS.
-# Chromium and its system libs are installed by `remotion browser ensure`
-# below — that command is the canonical Remotion path and survives base
-# image bumps without us hand-curating libnss3/libatk-bridge2.0-0/etc.
+# tini for signal handling, ffmpeg for muxing, ca-certs for HTTPS, plus the
+# Chromium runtime libs. `npx remotion browser ensure` downloads the Chrome
+# binary but NOT its system .so dependencies, so the slim base needs these
+# apt packages or chrome-headless-shell errors with `libnspr4.so: cannot
+# open shared object file`. List taken from
+# https://www.remotion.dev/docs/docker.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ffmpeg ca-certificates tini \
+      libnss3 libnspr4 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 \
+      libcups2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 \
+      libxfixes3 libgbm1 libpango-1.0-0 libcairo2 libasound2 \
+      fonts-liberation \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
