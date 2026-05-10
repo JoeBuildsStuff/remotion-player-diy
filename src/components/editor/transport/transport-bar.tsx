@@ -114,7 +114,7 @@ export function TransportBar() {
       </ButtonGroup>
 
       <div className="flex items-center gap-3">
-        <span className="font-mono text-xs tabular-nums text-muted-foreground">
+        <span className="hidden font-mono text-xs tabular-nums text-muted-foreground sm:inline">
           {formatFrame(currentFrame, fps)}
         </span>
         <div className="flex items-center gap-0.5">
@@ -147,7 +147,7 @@ export function TransportBar() {
             <SkipForward className="h-4 w-4" />
           </Button>
         </div>
-        <span className="font-mono text-xs tabular-nums text-muted-foreground">
+        <span className="hidden font-mono text-xs tabular-nums text-muted-foreground sm:inline">
           {formatFrame(durationInFrames, fps)}
         </span>
       </div>
@@ -220,7 +220,7 @@ export function TransportBar() {
             min={50}
             max={400}
             step={1}
-            className="w-24"
+            className="w-16 sm:w-24"
           />
           <Button
             type="button"

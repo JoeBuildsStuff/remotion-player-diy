@@ -243,7 +243,8 @@ function PreviewShareMenu() {
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" className="gap-1.5">
             <Share2 />
-            <span>Share</span>
+            <span className="text-muted-foreground hidden sm:inline">Share</span>
+       
             <ChevronDown className="text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>

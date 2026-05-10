@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: docker/setup-buildx-action@v3
 
@@ -27,6 +29,12 @@ jobs:
         id: img
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Compute release version
+        id: version
+        run: |
+          version="$(git describe --tags --abbrev=0 2>/dev/null || node -p "require('./package.json').version")"
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -39,5 +47,9 @@ jobs:
           build-args: |
             VITE_RENDER_SHARED_SECRET=${{ secrets.VITE_RENDER_SHARED_SECRET }}
             VITE_DEPLOY_MODE=selfhost
+            VITE_APP_VERSION=${{ steps.version.outputs.value }}
+            VITE_GIT_COMMIT_SHA=${{ github.sha }}
+            VITE_GIT_COMMIT_REF=${{ github.ref_name }}
+            VITE_BUILD_TIME=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

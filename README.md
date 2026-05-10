@@ -124,6 +124,12 @@ That script runs TypeScript and builds the Vite app. It does not create the Sand
 
 If `/api/render` logs `No sandbox snapshot pointer found at snapshot-cache/<env>.json`, run `pnpm create-snapshot` for that environment with `BLOB_READ_WRITE_TOKEN` set. Renders still work without a snapshot — they just fall back to cold sandbox builds.
 
+### Build metadata in Project info
+
+The settings menu's Project info dialog shows the release/tag, deploy mode, git commit, branch, build time, commit message, and Vercel deployment URL when available. Those values are baked into the Vite bundle at build time, so they identify the exact app build currently being served.
+
+On Vercel, the values come from Vercel's Git system environment variables. In the self-hosted Docker image, the GitHub Actions image-publish workflow passes the same metadata as Docker build args before pushing `ghcr.io/joebuildsstuff/remotion-player-diy:latest`.
+
 ## Useful Commands
 
 ```bash
