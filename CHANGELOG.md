@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.1...v1.0.2) (2026-05-10)
+
+
+### Bug Fixes
+
+* Refactor inspector components to enhance UI and functionality. Introduce accordion sections for better organization in CanvasInspector and ClipInspector. Implement media file input handling in CanvasInspector. Update Sidebar structure in Inspector for improved layout. Adjust button styles in TransportBar for consistency. ([53c47ae](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/53c47aed5f59a794d749f2ed9f0fc4b069c38dcb))
+
 ## [1.0.1](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.0.0...v1.0.1) (2026-05-10)
 
 
