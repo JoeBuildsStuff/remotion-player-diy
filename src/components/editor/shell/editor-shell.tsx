@@ -39,6 +39,7 @@ export function EditorShell() {
               <SidebarTrigger
                 aria-label="Toggle inspector"
                 size="icon"
+                className="bg-secondary"
               />
             </div>
           </SidebarProvider>

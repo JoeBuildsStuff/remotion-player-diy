@@ -30,7 +30,7 @@ export function EditorActionControls({
     <ButtonGroup>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Select">
+          <Button variant="secondary" size="icon" aria-label="Select">
             <MousePointer2 />
           </Button>
         </TooltipTrigger>
@@ -38,7 +38,7 @@ export function EditorActionControls({
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Rectangle">
+          <Button variant="secondary" size="icon" aria-label="Rectangle">
             <Square />
           </Button>
         </TooltipTrigger>
@@ -47,7 +47,7 @@ export function EditorActionControls({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Text"
             onClick={addTextClip}
@@ -60,7 +60,7 @@ export function EditorActionControls({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             type="button"
             aria-pressed={showCanvasRulers}
@@ -84,7 +84,7 @@ export function EditorHistoryControls() {
     <ButtonGroup>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Undo">
+          <Button variant="secondary" size="icon" aria-label="Undo">
             <Undo2 />
           </Button>
         </TooltipTrigger>
@@ -92,7 +92,7 @@ export function EditorHistoryControls() {
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Redo">
+          <Button variant="secondary" size="icon" aria-label="Redo">
             <Redo2 />
           </Button>
         </TooltipTrigger>

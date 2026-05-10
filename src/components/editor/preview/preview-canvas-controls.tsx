@@ -166,7 +166,7 @@ function PreviewZoomControls() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Zoom out"
             disabled={previewZoom <= 0.25}
@@ -180,7 +180,7 @@ function PreviewZoomControls() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Fit preview"
             onClick={resetPreviewZoom}
@@ -193,7 +193,7 @@ function PreviewZoomControls() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
             aria-label="Zoom in"
             disabled={previewZoom >= 3}
@@ -241,7 +241,7 @@ function PreviewShareMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-1.5">
+          <Button variant="secondary" className="gap-1.5">
             <Share2 />
             <span>Share</span>
             <ChevronDown className="text-muted-foreground" />
@@ -276,6 +276,7 @@ function PreviewShareMenu() {
               applyShareQuality(shareQuality)
               setRenderOpen(true)
             }}
+            variant="secondary"
             className="w-full justify-center"
             title={
               RENDERING_AVAILABLE

@@ -53,7 +53,7 @@ export function EditorSettingsMenu() {
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
                 aria-label="Open settings"
               >
