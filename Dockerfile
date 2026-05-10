@@ -54,6 +54,18 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server-dist ./server
 COPY --from=builder /app/remotion ./remotion
 COPY --from=builder /app/shared ./shared
+# @remotion/bundler runs at *render time* inside this container and
+# webpack-bundles `remotion/index.ts` plus all its transitive imports.
+# remotion/Root.tsx pulls components out of src/, so the entire src tree,
+# the tsconfigs, the public/ folder, and remotion.config.ts must be
+# present at runtime — this matches the canonical Remotion Dockerfile
+# at https://www.remotion.dev/docs/docker.
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/tsconfig.app.json ./tsconfig.app.json
+COPY --from=builder /app/tsconfig.node.json ./tsconfig.node.json
+COPY --from=builder /app/remotion.config.ts ./remotion.config.ts
 COPY --from=builder /app/package.json ./package.json
 
 # Pull the right Chromium for this Remotion version. Done at image-build time
