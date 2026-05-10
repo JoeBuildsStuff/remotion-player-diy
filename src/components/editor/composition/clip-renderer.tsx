@@ -1,11 +1,6 @@
 import type { CSSProperties } from 'react'
-import {
-  Audio,
-  Img,
-  OffthreadVideo,
-  interpolate,
-  useCurrentFrame,
-} from 'remotion'
+import { Audio, Video } from '@remotion/media'
+import { Img, interpolate, useCurrentFrame } from 'remotion'
 
 import type { Clip } from '../model/editor-types'
 
@@ -127,7 +122,7 @@ export function ClipRenderer({ clip }: { clip: Clip }) {
   if (clip.type === 'video') {
     return (
       <div style={mediaContainerStyle(clip, clip.opacity * visualFade)}>
-        <OffthreadVideo
+        <Video
           src={clip.src}
           trimBefore={clip.trimBeforeFrames}
           trimAfter={trimAfter}

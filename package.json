@@ -24,6 +24,7 @@
     "@hono/node-server": "^1.13.7",
     "@remotion/bundler": "^4.0.458",
     "@remotion/cli": "^4.0.458",
+    "@remotion/media": "4.0.458",
     "@remotion/media-utils": "4.0.458",
     "@remotion/player": "^4.0.458",
     "@remotion/renderer": "^4.0.458",
