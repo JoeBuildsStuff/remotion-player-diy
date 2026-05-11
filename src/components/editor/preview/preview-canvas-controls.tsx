@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, ChevronDown, Maximize2, Minus, Plus, Share2 } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ChevronDown, Maximize2, Minus, Plus, SquareArrowRightExit } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -242,9 +242,8 @@ function PreviewShareMenu() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" className="gap-1.5">
-            <Share2 />
+            <ArrowUpRight />
             <span className=" hidden sm:inline">Share</span>
-       
             <ChevronDown className="text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>

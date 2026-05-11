@@ -16,7 +16,7 @@ export function TimelineRuler({
         {Array.from({ length: tickCount + 1 }).map((_, i) => (
           <div
             key={i}
-            className="absolute top-0 h-full border-l border-border"
+            className={`absolute top-0 h-full ${i === 0 ? '' : 'border-l border-border'}`}
             style={{ left: i * pxPerSecond }}
           >
             <span className="absolute left-1 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">

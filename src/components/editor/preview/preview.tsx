@@ -1,5 +1,16 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { Upload } from 'lucide-react'
 import { Player } from '@remotion/player'
+
+import { Button } from '@/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 
 import { VideoComposition } from '../composition/video-composition'
 import { useEditor } from '../model/editor-context-value'
@@ -33,6 +44,7 @@ export function Preview() {
   const previewRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null)
+  const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 })
   const [canvasOrigin, setCanvasOrigin] = useState({ x: 0, y: 0 })
@@ -124,7 +136,7 @@ export function Preview() {
     <div
       ref={previewRef}
       data-preview-pane
-      className="relative flex min-w-0 flex-1 overflow-hidden bg-secondary dark:bg-secondary/40"
+      className="relative flex min-w-0 flex-1 overflow-hidden bg-input dark:bg-input/30"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -138,6 +150,17 @@ export function Preview() {
         }
       }}
     >
+      <input
+        ref={mediaInputRef}
+        type="file"
+        accept="video/*,audio/*,image/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          if (event.target.files) void addFiles(event.target.files)
+          event.target.value = ''
+        }}
+      />
       <PreviewCanvasControls />
 
       <div
@@ -167,11 +190,26 @@ export function Preview() {
         }}
       >
         {clips.length === 0 ? (
-          <p className="px-6 text-center text-sm text-muted-foreground">
-            Drop videos, images, or audio
-            <br />
-            here to get started.
-          </p>
+          <Empty className="border border-border max-w-sm">
+            <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Upload />
+            </EmptyMedia>
+              <EmptyTitle>Add your media</EmptyTitle>
+              <EmptyDescription>
+                Drop videos, images, or audio here to get started.
+              </EmptyDescription>
+              </EmptyHeader>
+            <EmptyContent>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => mediaInputRef.current?.click()}
+              >
+                Add items
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <Player
             ref={playerRef}
