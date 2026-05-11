@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Upload } from 'lucide-react'
+import { ImageIcon, Music, Video } from 'lucide-react'
 import { Player } from '@remotion/player'
 
 import { Button } from '@/components/ui/button'
@@ -192,8 +192,16 @@ export function Preview() {
         {clips.length === 0 ? (
           <Empty className="border border-border max-w-sm">
             <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Upload />
+            <EmptyMedia className="relative mb-3 h-10 w-20" aria-hidden>
+              <div className="absolute left-0 top-1/2 z-10 flex size-8 translate-y-[-40%] -rotate-12 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm">
+                <ImageIcon className="size-4" />
+              </div>
+              <div className="absolute left-1/2 top-1/2 z-20 flex size-8 -translate-x-1/2 translate-y-[-60%] items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm">
+                <Video className="size-4" />
+              </div>
+              <div className="absolute right-0 top-1/2 z-10 flex size-8 translate-y-[-40%] rotate-12 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm">
+                <Music className="size-4" />
+              </div>
             </EmptyMedia>
               <EmptyTitle>Add your media</EmptyTitle>
               <EmptyDescription>

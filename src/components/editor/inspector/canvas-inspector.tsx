@@ -289,7 +289,7 @@ export function CanvasInspector({
 
           <Section
             value="clips"
-            title="Clips"
+            title="Media"
             icon={Clapperboard}
             onTriggerClick={(value) => {
               if (sidebarState !== 'collapsed') return
@@ -317,6 +317,7 @@ export function CanvasInspector({
           >
             <MediaInspector
               clips={clips}
+              onAddMedia={() => mediaInputRef.current?.click()}
               removeClip={removeClip}
               selectedClipId={selectedClipId}
               setSelectedClipId={setSelectedClipId}
