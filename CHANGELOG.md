@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.0...v1.3.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* adjust empty state UI in preview component for better alignment and spacing ([93f5a76](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/93f5a76b93adb377afeed896eb0259041de2d8bf))
+
 # [1.3.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.2.0...v1.3.0) (2026-05-11)
 
 
