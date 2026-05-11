@@ -35,6 +35,7 @@ export type EditorState = {
   setIsPlaying: (p: boolean) => void
   setIsLooping: (v: boolean) => void
   setTimelineZoom: (v: number) => void
+  setPreviewZoom: (v: number) => void
   zoomTimelineIn: () => void
   zoomTimelineOut: () => void
   resetTimelineZoom: () => void

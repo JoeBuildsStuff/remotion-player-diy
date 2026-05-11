@@ -221,6 +221,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
+  const updatePreviewZoom = useCallback((value: number) => {
+    setPreviewZoom(clamp(value, MIN_PREVIEW_ZOOM, MAX_PREVIEW_ZOOM))
+  }, [])
+
   const zoomPreviewOut = useCallback(() => {
     setPreviewZoom((prev) =>
       clamp(prev - PREVIEW_ZOOM_STEP, MIN_PREVIEW_ZOOM, MAX_PREVIEW_ZOOM),
@@ -262,6 +266,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying,
       setIsLooping,
       setTimelineZoom: updateTimelineZoom,
+      setPreviewZoom: updatePreviewZoom,
       zoomTimelineIn,
       zoomTimelineOut,
       resetTimelineZoom,
@@ -306,6 +311,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       toggleCanvasRulers,
       updateClip,
       updateTimelineZoom,
+      updatePreviewZoom,
       volume,
       width,
       zoomPreviewIn,

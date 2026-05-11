@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, Maximize2, Minus, Plus } from 'lucide-react'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Minus,
+  Plus,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
@@ -11,11 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Slider } from '@/components/ui/slider'
 
 import {
   EditorActionControls,
@@ -23,6 +24,10 @@ import {
 } from '../controls/editor-action-controls'
 import { EditorSettingsMenu } from '../controls/editor-settings-menu'
 import { RenderDialog } from '../controls/render-dialog'
+import {
+  MAX_PREVIEW_ZOOM,
+  MIN_PREVIEW_ZOOM,
+} from '../model/editor-constants'
 import {
   useEditor,
   type ExportSettings,
@@ -129,7 +134,7 @@ export function PreviewCanvasControls() {
         className="pointer-events-none absolute bottom-2 z-30"
         style={{ left: leftOffset }}
       >
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex flex-col items-start gap-2">
           <PreviewZoomControls />
         </div>
       </div>
@@ -157,54 +162,58 @@ function PreviewZoomControls() {
   const {
     previewZoom,
     resetPreviewZoom,
+    setPreviewZoom,
     zoomPreviewIn,
     zoomPreviewOut,
   } = useEditor()
+  const zoomPercent = Math.round(previewZoom * 100)
+  const minPreviewZoomPercent = Math.round(MIN_PREVIEW_ZOOM * 100)
+  const maxPreviewZoomPercent = Math.round(MAX_PREVIEW_ZOOM * 100)
 
   return (
-    <ButtonGroup>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label="Zoom out"
-            disabled={previewZoom <= 0.25}
-            onClick={zoomPreviewOut}
-          >
-            <Minus />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Zoom out</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label="Fit preview"
-            onClick={resetPreviewZoom}
-          >
-            <Maximize2 />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Fit preview</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label="Zoom in"
-            disabled={previewZoom >= 3}
-            onClick={zoomPreviewIn}
-          >
-            <Plus />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Zoom in</TooltipContent>
-      </Tooltip>
-    </ButtonGroup>
+    <div className="flex w-28 flex-col gap-3 group">
+      <Slider
+        aria-label="Preview zoom"
+        value={[zoomPercent]}
+        min={minPreviewZoomPercent}
+        max={maxPreviewZoomPercent}
+        step={1}
+        onValueChange={(value) => {
+          const nextZoomPercent = value[0]
+          if (nextZoomPercent == null) return
+          setPreviewZoom(nextZoomPercent / 100)
+        }}
+        className="mx-[2px] w-[calc(100%-4px)] opacity-0 transition-opacity group-hover:opacity-100"
+      />
+      <ButtonGroup className="w-28">
+        <Button
+          variant="secondary"
+          size="icon"
+          aria-label="Zoom out"
+          disabled={previewZoom <= MIN_PREVIEW_ZOOM}
+          onClick={zoomPreviewOut}
+        >
+          <Minus />
+        </Button>
+        <Button
+          variant="secondary"
+          aria-label={`Current zoom ${zoomPercent} percent. Fit preview`}
+          onClick={resetPreviewZoom}
+          className="w-14 tabular-nums"
+        >
+          {zoomPercent}%
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          aria-label="Zoom in"
+          disabled={previewZoom >= MAX_PREVIEW_ZOOM}
+          onClick={zoomPreviewIn}
+        >
+          <Plus />
+        </Button>
+      </ButtonGroup>
+    </div>
   )
 }
 
