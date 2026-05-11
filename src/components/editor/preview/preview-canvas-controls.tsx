@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, ChevronDown, Maximize2, Minus, Plus, SquareArrowRightExit } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ChevronDown, Maximize2, Minus, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
