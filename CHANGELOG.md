@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.3...v1.4.0) (2026-05-11)
+
+
+### Features
+
+* enhance preview zoom functionality and adjust constants ([fae83cf](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/fae83cf6cbc42982ff58af5050e55794d815a2f5))
+
 ## [1.3.3](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.2...v1.3.3) (2026-05-11)
 
 
