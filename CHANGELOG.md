@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.1...v1.3.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* normalize render scale to codec-safe dimensions ([abd52f7](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/abd52f76963470bddcd29d366251f8a4eaac2aec))
+
 ## [1.3.1](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.0...v1.3.1) (2026-05-11)
 
 
