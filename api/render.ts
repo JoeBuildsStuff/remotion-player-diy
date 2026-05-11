@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 import { COMP_NAME } from '../remotion/constants.js'
 import { ClipSchema } from '../remotion/schema.js'
+import { normalizeRenderScalePercent } from '../shared/render-scale.js'
 import { bundleRemotionProject, formatSSE, type RenderProgress } from './_render-helpers.js'
 import { restoreSnapshot } from './_restore-snapshot.js'
 import { SANDBOX_CREATING_TIMEOUT } from './sandbox-config.js'
@@ -137,6 +138,20 @@ export async function POST(request: Request): Promise<Response> {
         bundleRemotionProject('.remotion')
         await addBundleToSandbox({ sandbox, bundleDir: '.remotion' })
 
+        const normalizedScale = normalizeRenderScalePercent({
+          width: body.inputProps.width,
+          height: body.inputProps.height,
+          requestedPercent: body.exportSettings.resolutionScale,
+        })
+        if (normalizedScale.adjusted) {
+          await send({
+            type: 'phase',
+            phase: 'Rendering video...',
+            progress: 0.25,
+            subtitle: `Adjusted output scale from ${normalizedScale.requestedPercent}% to ${normalizedScale.percent}% for codec-safe integer dimensions (${normalizedScale.outputWidth}x${normalizedScale.outputHeight}).`,
+          })
+        }
+
         const { sandboxFilePath, contentType } = await renderMediaOnVercel({
           sandbox,
           compositionId: COMP_NAME,
@@ -144,7 +159,7 @@ export async function POST(request: Request): Promise<Response> {
           codec: 'h264',
           crf: qualityToCrf(body.exportSettings.quality),
           audioBitrate: `${body.exportSettings.audioBitrateKbps}K`,
-          scale: body.exportSettings.resolutionScale / 100,
+          scale: normalizedScale.scale,
           onProgress: async (update) => {
             switch (update.stage) {
               case 'opening-browser':

@@ -26,6 +26,7 @@ import { z } from 'zod'
 
 import { COMP_NAME } from '../remotion/constants.js'
 import { ClipSchema } from '../remotion/schema.js'
+import { normalizeRenderScalePercent } from '../shared/render-scale.js'
 import type { RenderProgress } from '../shared/sse.js'
 import { createStorageAdapter, type StorageAdapter } from './storage/index.js'
 
@@ -215,6 +216,20 @@ app.post('/api/render', async (c) => {
         progress: 0.1,
       })
 
+      const normalizedScale = normalizeRenderScalePercent({
+        width: body.inputProps.width,
+        height: body.inputProps.height,
+        requestedPercent: body.exportSettings.resolutionScale,
+      })
+      if (normalizedScale.adjusted) {
+        await send({
+          type: 'phase',
+          phase: 'Rendering video...',
+          progress: 0.1,
+          subtitle: `Adjusted output scale from ${normalizedScale.requestedPercent}% to ${normalizedScale.percent}% for codec-safe integer dimensions (${normalizedScale.outputWidth}x${normalizedScale.outputHeight}).`,
+        })
+      }
+
       await renderMedia({
         composition,
         serveUrl: bundleLocation,
@@ -223,7 +238,7 @@ app.post('/api/render', async (c) => {
         inputProps: body.inputProps,
         crf: qualityToCrf(body.exportSettings.quality),
         audioBitrate: `${body.exportSettings.audioBitrateKbps}K`,
-        scale: body.exportSettings.resolutionScale / 100,
+        scale: normalizedScale.scale,
         chromiumOptions: {
           // Recommended for Docker per
           // https://www.remotion.dev/docs/miscellaneous/linux-single-process

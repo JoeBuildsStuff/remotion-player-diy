@@ -6,6 +6,7 @@ import {
   RENDERING_AVAILABLE,
   RENDERING_DISABLED_MESSAGE,
 } from '@/components/editor/model/render-mode'
+import { normalizeRenderScalePercent } from '../../../../shared/render-scale'
 
 const SHARED_SECRET = import.meta.env.VITE_RENDER_SHARED_SECRET as
   | string
@@ -67,6 +68,12 @@ function buildRenderPayload(inputs: RenderInputs) {
     }
   })
 
+  const normalizedScale = normalizeRenderScalePercent({
+    width: inputs.width,
+    height: inputs.height,
+    requestedPercent: inputs.exportSettings.resolutionScale,
+  })
+
   return {
     inputProps: {
       clips,
@@ -75,7 +82,10 @@ function buildRenderPayload(inputs: RenderInputs) {
       height: inputs.height,
       durationInFrames: inputs.durationInFrames,
     },
-    exportSettings: inputs.exportSettings,
+    exportSettings: {
+      ...inputs.exportSettings,
+      resolutionScale: normalizedScale.percent,
+    },
   }
 }
 
