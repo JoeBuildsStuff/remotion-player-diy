@@ -60,8 +60,45 @@ Then in `docker-compose.yml`, replace `image:` with `build: .` (the example file
 | `CRON_SECRET` | yes | Bearer token for `GET /api/cleanup`. |
 | `PUBLIC_BASE_URL` | yes | Public origin without trailing slash. URLs returned by `/api/upload` and `/api/render` are prefixed with this. Behind a reverse proxy, set to the public hostname. |
 | `PORT` | no, default `3000` | Internal listen port. |
-| `DATA_DIR` | no, default `/data` | Where `sources/` and `renders/` live. Mount a volume here. |
+| `DATA_DIR` | no, default `/data` | Where `sources/` and `renders/` live (local storage only). Mount a volume here. |
+| `SOURCES_DIR` | no, default `${DATA_DIR}/sources` | Override just the sources path — useful when you want bulk storage for uploads and SSD for renders. |
+| `RENDERS_DIR` | no, default `${DATA_DIR}/renders` | Override just the renders path. |
 | `DISABLE_BUNDLE_CACHE` | no | Set to `true` to re-bundle the Remotion project on every render (debugging only). |
+
+### Retention
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `RENDERS_TTL_DAYS` | `7` | Renders older than this are deleted by `/api/cleanup`. Set to `0` to disable. |
+| `SOURCES_TTL_DAYS` | `30` | Same, for uploaded sources. |
+
+### Signed `/media` URLs (local storage)
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MEDIA_URL_SIGNING_SECRET` | _unset_ | When set, `/api/upload` and `/api/render` return URLs with `?exp=…&sig=…` and `/media/*` refuses access without a valid signature. Without it, reads rely on UUIDv4 unguessability. |
+
+Signed-URL expiry tracks the matching TTL, so a clip uploaded today is valid until cleanup would delete it anyway. Changing the secret invalidates every URL in existing projects — treat it as a one-way switch.
+
+### S3-compatible storage
+
+Set `STORAGE_BACKEND=s3` and provide bucket credentials. Works with AWS S3, Cloudflare R2, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi — anything that speaks the S3 API.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `STORAGE_BACKEND` | yes (`s3`) | Switches off local-disk storage. |
+| `S3_BUCKET` | yes | Bucket name. |
+| `S3_REGION` | yes | Region (e.g. `us-east-1`, `auto` for R2). |
+| `S3_ENDPOINT` | for non-AWS | Custom endpoint, e.g. `https://<acct>.r2.cloudflarestorage.com`, `http://minio:9000`. |
+| `S3_FORCE_PATH_STYLE` | for MinIO | Set to `true` for MinIO and some self-hosted gateways. Usually `false` for AWS / R2. |
+| `S3_ACCESS_KEY_ID` | usually | Omit to use the default credential chain (IAM role, env, profile, …). |
+| `S3_SECRET_ACCESS_KEY` | usually | Same — pair with the access key. |
+| `S3_SOURCES_PREFIX` | no, default `sources` | Key prefix for uploaded source media. |
+| `S3_RENDERS_PREFIX` | no, default `renders` | Key prefix for rendered MP4s. |
+| `S3_PUBLIC_BASE_URL` | no | If set, the editor receives `${url}/${key}` (public bucket / CDN). If unset, returns AWS SigV4 presigned URLs capped at 7 days. |
+| `S3_TMP_DIR` | no | Local scratch dir for render output before upload. Defaults to OS tmpdir. |
+
+`@remotion/renderer` always writes the MP4 to a local file first; the S3 adapter uploads it after the render completes and deletes the temp file. So the container still needs a small amount of writable disk even in S3 mode.
 
 `VITE_RENDER_SHARED_SECRET` and `VITE_DEPLOY_MODE` are **build-time** args, not runtime env. They are baked into the SPA bundle.
 
@@ -96,11 +133,17 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
 
 **Backups.** Back up the `/data` volume. Nothing else is stateful.
 
-## Security: `/media/*` is public
+## Security: `/media/*` reads
 
-Uploaded source media and rendered output are served unauthenticated at `/media/sources/<id>` and `/media/renders/<id>`. The shared-secret gate only protects the *write* paths (`/api/upload`, `/api/render`). Reads rely on UUIDv4 (~122 bits of entropy) for unguessability — the same security model as a Vercel Blob with `addRandomSuffix`.
+By default, uploaded source media and rendered output are served unauthenticated at `/media/sources/<id>` and `/media/renders/<id>`. The shared-secret gate only protects the *write* paths (`/api/upload`, `/api/render`). Reads rely on UUIDv4 (~122 bits of entropy) for unguessability — the same security model as a Vercel Blob with `addRandomSuffix`.
 
-This is a deliberate trade-off: browser `<video>` elements can't attach a custom auth header to source-clip preview requests, so gating `/media/*` with `x-render-secret` would break the editor's preview. If you need a stronger gate without implementing signed URLs, put the whole hostname behind a reverse-proxy auth layer (Traefik basic-auth, Authelia, Authentik, Cloudflare Access). That covers the SPA, API, and `/media` together.
+This is a deliberate trade-off: browser `<video>` elements can't attach a custom auth header to source-clip preview requests, so gating `/media/*` with `x-render-secret` would break the editor's preview.
+
+Three ways to harden this:
+
+1. **Signed URLs.** Set `MEDIA_URL_SIGNING_SECRET` to any long random string. The server then issues `?exp=…&sig=…` URLs and refuses unsigned `/media/*` requests. The signature travels in the query string so `<video>` elements still work. Expiry tracks the TTL.
+2. **Reverse-proxy auth.** Put the whole hostname behind Traefik basic-auth, Authelia, Authentik, or Cloudflare Access. Covers the SPA, API, and `/media` in one place.
+3. **S3 with presigned URLs.** Switch storage to `STORAGE_BACKEND=s3` against a private bucket. The editor receives short-lived presigned GetObject URLs.
 
 ## Common deploy gotchas
 

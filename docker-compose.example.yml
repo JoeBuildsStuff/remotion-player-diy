@@ -27,6 +27,32 @@ services:
       # Public origin used to build URLs for uploaded sources and renders.
       # No trailing slash. Behind a reverse proxy this is the public URL.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+
+      # ─── Storage (optional) ──────────────────────────────────────────────
+      # Default is local disk under /data. To swap in S3-compatible storage
+      # (AWS S3, Cloudflare R2, MinIO, Backblaze B2, DO Spaces, Wasabi):
+      # STORAGE_BACKEND: s3
+      # S3_BUCKET: ${S3_BUCKET}
+      # S3_REGION: ${S3_REGION:-auto}
+      # S3_ENDPOINT: ${S3_ENDPOINT}          # e.g. https://<acct>.r2.cloudflarestorage.com
+      # S3_FORCE_PATH_STYLE: "true"           # required for MinIO; usually false for AWS/R2
+      # S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      # S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL}  # set for public bucket / CDN; otherwise presigned URLs
+      # # Optional: split sources and renders onto separate disks (local only).
+      # SOURCES_DIR: /data/sources
+      # RENDERS_DIR: /data/renders
+
+      # ─── Retention (optional) ────────────────────────────────────────────
+      # Days before /api/cleanup prunes. 0 disables that scope.
+      # RENDERS_TTL_DAYS: "7"
+      # SOURCES_TTL_DAYS: "30"
+
+      # ─── Signed /media URLs (optional, local storage only) ───────────────
+      # Set to any long random string to require HMAC-signed URLs for
+      # /media/sources/* and /media/renders/*. Without it, file access relies
+      # on UUIDv4 unguessability (same as default Vercel Blob behavior).
+      # MEDIA_URL_SIGNING_SECRET: ${MEDIA_URL_SIGNING_SECRET}
     volumes:
       - data:/data
 

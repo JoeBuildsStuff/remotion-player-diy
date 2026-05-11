@@ -2,12 +2,14 @@
 //
 // Single binary that serves the built Vite SPA, exposes /api/upload and
 // /api/render with the same shared-secret + SSE contract as the Vercel
-// deploy, and serves uploaded sources + rendered output as static files.
+// deploy, and serves uploaded sources + rendered output through a pluggable
+// storage adapter (local filesystem or S3-compatible bucket).
 //
-// Storage: local filesystem under DATA_DIR (sources/, renders/, tmp/).
+// Storage: local (default) under DATA_DIR/{sources,renders}, or s3
+//          (STORAGE_BACKEND=s3) against any S3-compatible bucket.
 // Rendering: @remotion/bundler + @remotion/renderer (no Vercel Sandbox).
 // Cleanup: an internal 24h interval, mirrored by GET /api/cleanup for parity
-//          with the Vercel cron path.
+//          with the Vercel cron path. TTLs are configurable.
 
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
@@ -15,7 +17,7 @@ import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
-import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises'
+import { stat } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
 import path from 'node:path'
@@ -25,9 +27,9 @@ import { z } from 'zod'
 import { COMP_NAME } from '../remotion/constants.js'
 import { ClipSchema } from '../remotion/schema.js'
 import type { RenderProgress } from '../shared/sse.js'
+import { createStorageAdapter, type StorageAdapter } from './storage/index.js'
 
 const PORT = Number(process.env.PORT ?? 3000)
-const DATA_DIR = process.env.DATA_DIR ?? path.resolve('data')
 const DIST_DIR = process.env.DIST_DIR ?? path.resolve('dist')
 const REMOTION_ENTRY =
   process.env.REMOTION_ENTRY ?? path.resolve('remotion/index.ts')
@@ -36,11 +38,31 @@ const PUBLIC_BASE_URL =
 const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
 const CRON_SECRET = process.env.CRON_SECRET
 
-const SOURCES_DIR = path.join(DATA_DIR, 'sources')
-const RENDERS_DIR = path.join(DATA_DIR, 'renders')
+// Retention. `0` disables cleanup for that scope. Defaults match the prior
+// hardcoded values and the Vercel cron path (api/cleanup.ts).
+const RENDERS_TTL_DAYS = numberFromEnv('RENDERS_TTL_DAYS', 7)
+const SOURCES_TTL_DAYS = numberFromEnv('SOURCES_TTL_DAYS', 30)
 
-await mkdir(SOURCES_DIR, { recursive: true })
-await mkdir(RENDERS_DIR, { recursive: true })
+const storage: StorageAdapter = await createStorageAdapter({
+  STORAGE_BACKEND: process.env.STORAGE_BACKEND,
+  DATA_DIR: process.env.DATA_DIR,
+  SOURCES_DIR: process.env.SOURCES_DIR,
+  RENDERS_DIR: process.env.RENDERS_DIR,
+  PUBLIC_BASE_URL,
+  MEDIA_URL_SIGNING_SECRET: process.env.MEDIA_URL_SIGNING_SECRET,
+  SOURCES_TTL_DAYS,
+  RENDERS_TTL_DAYS,
+  S3_BUCKET: process.env.S3_BUCKET,
+  S3_REGION: process.env.S3_REGION,
+  S3_ENDPOINT: process.env.S3_ENDPOINT,
+  S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE,
+  S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
+  S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
+  S3_SOURCES_PREFIX: process.env.S3_SOURCES_PREFIX,
+  S3_RENDERS_PREFIX: process.env.S3_RENDERS_PREFIX,
+  S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL,
+  S3_TMP_DIR: process.env.S3_TMP_DIR,
+})
 
 // Single-render concurrency cap. Bundling + headless Chrome is heavy on the
 // homelab box and a queue is out of scope for v1.
@@ -82,9 +104,8 @@ async function getBundle(): Promise<string> {
 }
 
 // ─── /api/upload ──────────────────────────────────────────────────────────
-// Self-hosted uploads are a single multipart POST: client sends the File
-// directly, server writes it to DATA_DIR/sources, and returns a public URL
-// served by /media/sources/<name>. Replaces the Vercel Blob token dance.
+// Client sends the File in a multipart POST; the adapter persists it and
+// returns a public URL the editor can render the clip from.
 
 app.post('/api/upload', async (c) => {
   const denied = requireSecret(c.req.raw)
@@ -105,20 +126,13 @@ app.post('/api/upload', async (c) => {
     return c.text('Missing "file" field in multipart body', 400)
   }
 
-  const safeName = file.name.replace(/[^\w.-]+/g, '_') || 'upload.bin'
-  const id = randomUUID()
-  const filename = `${id}-${safeName}`
-  const dest = path.join(SOURCES_DIR, filename)
-
-  // Single-shot. For very large media the editor splits into chunks itself —
-  // we trust the OS / disk to handle the buffer.
-  const buf = Buffer.from(await file.arrayBuffer())
-  await writeFile(dest, buf)
-
-  return c.json({
-    url: `${PUBLIC_BASE_URL}/media/sources/${filename}`,
-    pathname: `sources/${filename}`,
+  const stored = await storage.uploadSource({
+    name: file.name,
+    data: Buffer.from(await file.arrayBuffer()),
+    contentType: file.type || undefined,
   })
+
+  return c.json({ url: stored.url, pathname: stored.pathname })
 })
 
 // ─── /api/render ──────────────────────────────────────────────────────────
@@ -141,7 +155,7 @@ const RenderRequestSchema = z.object({
 })
 
 function qualityToCrf(quality: number) {
-  // Match the Vercel handler's mapping so quality slider behaves identically.
+  // Match the Vercel handler's mapping so the slider behaves identically.
   return Math.round(36 - quality * 0.18)
 }
 
@@ -171,7 +185,7 @@ app.post('/api/render', async (c) => {
     const send = (m: RenderProgress) =>
       stream.writeSSE({ data: JSON.stringify(m) })
 
-    let outFile: string | null = null
+    let tempPath: string | null = null
     try {
       await send({
         type: 'phase',
@@ -193,7 +207,7 @@ app.post('/api/render', async (c) => {
       })
 
       const renderId = randomUUID()
-      outFile = path.join(RENDERS_DIR, `${renderId}.mp4`)
+      tempPath = storage.renderTempPath(renderId)
 
       await send({
         type: 'phase',
@@ -205,7 +219,7 @@ app.post('/api/render', async (c) => {
         composition,
         serveUrl: bundleLocation,
         codec: 'h264',
-        outputLocation: outFile,
+        outputLocation: tempPath,
         inputProps: body.inputProps,
         crf: qualityToCrf(body.exportSettings.quality),
         audioBitrate: `${body.exportSettings.audioBitrateKbps}K`,
@@ -228,22 +242,24 @@ app.post('/api/render', async (c) => {
         },
       })
 
-      const stats = await stat(outFile)
-      await send({
-        type: 'done',
-        url: `${PUBLIC_BASE_URL}/media/renders/${renderId}.mp4`,
-        size: stats.size,
-      })
+      if (storage.kind === 's3') {
+        await send({
+          type: 'phase',
+          phase: 'Uploading to storage...',
+          progress: 0.96,
+        })
+      }
+
+      const stats = await stat(tempPath)
+      const stored = await storage.finalizeRender(tempPath, renderId)
+      await send({ type: 'done', url: stored.url, size: stats.size })
     } catch (err) {
       console.error('[render] failed:', err)
       await send({
         type: 'error',
         message: err instanceof Error ? err.message : String(err),
       })
-      // Best-effort cleanup of a half-written file so the disk doesn't grow.
-      if (outFile) {
-        await unlink(outFile).catch(() => {})
-      }
+      if (tempPath) await storage.abortRender(tempPath)
     } finally {
       renderInFlight = false
     }
@@ -251,33 +267,12 @@ app.post('/api/render', async (c) => {
 })
 
 // ─── /api/cleanup ─────────────────────────────────────────────────────────
-// Delete renders >7d, sources >30d. TTLs match api/cleanup.ts so behavior
-// stays identical across deploys.
-
-const RENDERS_TTL_DAYS = 7
-const SOURCES_TTL_DAYS = 30
-
-async function purgeDir(dir: string, ttlDays: number) {
-  const cutoff = Date.now() - ttlDays * 24 * 60 * 60 * 1000
-  let scanned = 0
-  let deleted = 0
-  const entries = await readdir(dir).catch(() => [])
-  for (const name of entries) {
-    scanned++
-    const full = path.join(dir, name)
-    const s = await stat(full).catch(() => null)
-    if (!s || !s.isFile()) continue
-    if (s.mtimeMs < cutoff) {
-      await unlink(full).catch(() => {})
-      deleted++
-    }
-  }
-  return { dir, scanned, deleted, ttlDays }
-}
+// Mirrors api/cleanup.ts on the Vercel deploy. TTLs come from env so each
+// installation can set its own retention; `0` disables that scope.
 
 async function runCleanup() {
-  const renders = await purgeDir(RENDERS_DIR, RENDERS_TTL_DAYS)
-  const sources = await purgeDir(SOURCES_DIR, SOURCES_TTL_DAYS)
+  const renders = await storage.purgeRenders(RENDERS_TTL_DAYS)
+  const sources = await storage.purgeSources(SOURCES_TTL_DAYS)
   return { renders, sources }
 }
 
@@ -298,57 +293,11 @@ setInterval(() => {
   runCleanup().catch((err) => console.error('[cleanup] failed:', err))
 }, CLEANUP_INTERVAL_MS)
 
-// ─── /media/* static media ────────────────────────────────────────────────
-// Read-only file server for uploaded sources and rendered output. Path
-// traversal is blocked by checking that the resolved path is still inside
-// the expected directory.
+// ─── Adapter-owned routes ─────────────────────────────────────────────────
+// Local storage mounts /media/* here; S3 is a no-op (URLs go straight to the
+// bucket / CDN).
 
-const MIME: Record<string, string> = {
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-}
-
-async function serveMedia(
-  baseDir: string,
-  relPath: string,
-): Promise<Response> {
-  const full = path.resolve(baseDir, relPath)
-  if (!full.startsWith(path.resolve(baseDir) + path.sep)) {
-    return new Response('Forbidden', { status: 403 })
-  }
-  const s = await stat(full).catch(() => null)
-  if (!s || !s.isFile()) {
-    return new Response('Not found', { status: 404 })
-  }
-  const ext = path.extname(full).toLowerCase()
-  const stream = createReadStream(full)
-  return new Response(Readable.toWeb(stream) as ReadableStream, {
-    headers: {
-      'Content-Type': MIME[ext] ?? 'application/octet-stream',
-      'Content-Length': String(s.size),
-      'Cache-Control': 'public, max-age=3600',
-    },
-  })
-}
-
-app.get('/media/sources/*', (c) => {
-  const rel = c.req.path.replace(/^\/media\/sources\//, '')
-  return serveMedia(SOURCES_DIR, rel)
-})
-app.get('/media/renders/*', (c) => {
-  const rel = c.req.path.replace(/^\/media\/renders\//, '')
-  return serveMedia(RENDERS_DIR, rel)
-})
+storage.registerRoutes(app)
 
 // ─── SPA static ───────────────────────────────────────────────────────────
 // Serve the Vite-built dist/ as the rest of the app. The wildcard fall-back
@@ -375,5 +324,17 @@ app.notFound(async () => {
 
 serve({ fetch: app.fetch, port: PORT })
 console.log(
-  `[server] listening on :${PORT}  data=${DATA_DIR}  dist=${DIST_DIR}  base=${PUBLIC_BASE_URL}`,
+  `[server] listening on :${PORT}  storage=${storage.kind}  dist=${DIST_DIR}  base=${PUBLIC_BASE_URL}  ` +
+    `ttl=renders:${RENDERS_TTL_DAYS}d/sources:${SOURCES_TTL_DAYS}d`,
 )
+
+function numberFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') return fallback
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 0) {
+    console.warn(`[server] ignoring invalid ${name}="${raw}", using ${fallback}`)
+    return fallback
+  }
+  return n
+}
