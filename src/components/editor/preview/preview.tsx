@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ImageIcon, Music, Video } from 'lucide-react'
 import { Player } from '@remotion/player'
 
@@ -123,6 +123,11 @@ export function Preview() {
   const canvasDisplayWidth = canvasSize.width * previewZoom
   const canvasDisplayHeight = canvasSize.height * previewZoom
 
+  const playerInputProps = useMemo(
+    () => ({ clips, selectedClipId, setSelectedClipId, updateClip }),
+    [clips, selectedClipId, setSelectedClipId, updateClip],
+  )
+
   const guides = useCanvasGuides({
     compositionWidth: width,
     compositionHeight: height,
@@ -222,12 +227,7 @@ export function Preview() {
           <Player
             ref={playerRef}
             component={VideoComposition}
-            inputProps={{
-              clips,
-              selectedClipId,
-              setSelectedClipId,
-              updateClip,
-            }}
+            inputProps={playerInputProps}
             durationInFrames={Math.max(1, durationInFrames)}
             fps={fps}
             compositionWidth={width}
