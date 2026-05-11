@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.2.0...v1.3.0) (2026-05-11)
+
+
+### Features
+
+* add pluggable self-hosted storage backends ([d136c31](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/d136c319ad478b18bb2e6e44f7efc3c7e8d54587))
+* Enhance media handling in preview component with file input and improved empty state UI. Update icons for share functionality and adjust background styles for better visual consistency. ([87f67a5](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/87f67a57b397eeef42ff60e582b8ec695abf4434))
+* Update media handling in CanvasInspector and MediaInspector components. Rename "Clips" section to "Media" and enhance empty state UI with improved messaging and icons. Add functionality to trigger media input from MediaInspector. ([489d9f4](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/489d9f4f4a97e2f3977e04b5270a26376b0dacc3))
+
 # [1.2.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.1.0...v1.2.0) (2026-05-10)
 
 
