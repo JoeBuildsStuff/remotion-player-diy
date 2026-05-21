@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.4.0...v1.5.0) (2026-05-21)
+
+
+### Features
+
+* add API endpoint to list previously uploaded sources ([6b477cd](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/6b477cd9edf2c79a8faac88e1f10490849abcc56))
+
 # [1.4.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.3.3...v1.4.0) (2026-05-11)
 
 
