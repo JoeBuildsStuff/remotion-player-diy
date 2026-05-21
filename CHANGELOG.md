@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.5.0...v1.6.0) (2026-05-21)
+
+
+### Features
+
+* add DELETE API endpoint for source media management ([7811c32](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/7811c32a4eec407c4da8ad80290de5f2f830bead))
+
 # [1.5.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.4.0...v1.5.0) (2026-05-21)
 
 
