@@ -136,6 +136,16 @@ app.post('/api/upload', async (c) => {
   return c.json({ url: stored.url, pathname: stored.pathname })
 })
 
+// ─── /api/sources ─────────────────────────────────────────────────────────
+// Lists everything currently sitting in the sources bucket/dir, so the editor
+// can show a "Previous Uploads" panel and re-attach a clip without re-uploading.
+
+app.get('/api/sources', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  return c.json({ sources: await storage.listSources() })
+})
+
 // ─── /api/render ──────────────────────────────────────────────────────────
 
 const ExportSettingsSchema = z.object({

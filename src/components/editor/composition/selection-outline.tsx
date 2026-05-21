@@ -12,6 +12,7 @@ import {
   ROTATION_HANDLE_OFFSET,
   handlePositionStyle,
   normalizeRotation,
+  resizeCursorForRotation,
   resizeClip,
   type ClipDragData,
   type ResizeHandle,
@@ -183,7 +184,7 @@ export function SelectionOutline({
             </span>
           </button>
 
-          {RESIZE_HANDLES.map(({ handle, cursor, x, y }) => (
+          {RESIZE_HANDLES.map(({ handle, x, y }) => (
             <button
               key={handle}
               type="button"
@@ -191,7 +192,7 @@ export function SelectionOutline({
               onPointerDown={(e) => startResize(e, handle)}
               style={{
                 ...handlePositionStyle(x, y, hitSize),
-                cursor,
+                cursor: resizeCursorForRotation(handle, clip.rotation),
               }}
             >
               <span

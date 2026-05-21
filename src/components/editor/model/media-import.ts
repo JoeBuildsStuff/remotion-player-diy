@@ -132,6 +132,67 @@ function validDuration(durationInSeconds: number) {
     : 5
 }
 
+function clipTypeFromContentType(contentType: string): ClipType | null {
+  if (contentType.startsWith('video/')) return 'video'
+  if (contentType.startsWith('audio/')) return 'audio'
+  if (contentType.startsWith('image/')) return 'image'
+  return null
+}
+
+const EXT_TYPES: Record<string, ClipType> = {
+  mp4: 'video', webm: 'video', mov: 'video', mkv: 'video',
+  mp3: 'audio', wav: 'audio', ogg: 'audio', m4a: 'audio',
+  png: 'image', jpg: 'image', jpeg: 'image', gif: 'image',
+  webp: 'image', svg: 'image',
+}
+
+function clipTypeFromName(name: string): ClipType | null {
+  const ext = name.split('.').pop()?.toLowerCase()
+  if (!ext) return null
+  return EXT_TYPES[ext] ?? null
+}
+
+export function inferClipType(
+  name: string,
+  contentType?: string,
+): ClipType | null {
+  if (contentType) {
+    const t = clipTypeFromContentType(contentType)
+    if (t) return t
+  }
+  return clipTypeFromName(name)
+}
+
+export async function probeRemoteMediaMetadata(
+  url: string,
+  type: ClipType,
+): Promise<MediaMetadata> {
+  if (type === 'image') {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.src = url
+      img.onload = () => {
+        resolve({
+          durationInSeconds: IMAGE_DEFAULT_SECONDS,
+          width: img.naturalWidth || null,
+          height: img.naturalHeight || null,
+          fps: null,
+        })
+      }
+      img.onerror = () => {
+        resolve({
+          durationInSeconds: IMAGE_DEFAULT_SECONDS,
+          width: null,
+          height: null,
+          fps: null,
+        })
+      }
+    })
+  }
+  return probeAudioVideoMetadataWithElement(url, type)
+}
+
 export async function importMediaFiles(
   files: FileList | File[],
 ): Promise<ImportedMedia[]> {

@@ -19,7 +19,12 @@ import {
   type EditorState,
   type ExportSettings,
 } from './editor-context-value'
-import { importMediaFiles } from './media-import'
+import {
+  importMediaFiles,
+  inferClipType,
+  probeRemoteMediaMetadata,
+} from './media-import'
+import { fitWithinCanvas } from './clip-geometry'
 import { clamp, durationInFramesFor } from './time'
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
@@ -99,6 +104,83 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         })
     }
   }, [height, width])
+
+  const addExistingSource = useCallback(
+    async (input: {
+      url: string
+      name: string
+      contentType?: string
+      size?: number
+    }) => {
+      const type = inferClipType(input.name, input.contentType)
+      if (!type) return
+
+      const metadata = await probeRemoteMediaMetadata(input.url, type)
+      const durationInFrames = Math.max(
+        1,
+        Math.round(metadata.durationInSeconds * FPS),
+      )
+      const layout = fitWithinCanvas(
+        metadata.width,
+        metadata.height,
+        width,
+        height,
+      )
+
+      setClips((prev) => {
+        // Mirror clip-factory's track selection, inlined so we can reference
+        // the existing remote URL without re-uploading.
+        const existingTrack = prev.find((clip) => clip.type === type)?.trackIndex
+        const trackIndex =
+          existingTrack ?? (prev.length === 0
+            ? 0
+            : Math.max(...prev.map((c) => c.trackIndex)) + 1)
+        const lastEnd = prev
+          .filter((c) => c.trackIndex === trackIndex)
+          .reduce(
+            (max, c) => Math.max(max, c.startFrame + c.durationInFrames),
+            0,
+          )
+
+        const clip: Clip = {
+          id: crypto.randomUUID(),
+          type,
+          src: input.url,
+          remoteSrc: input.url,
+          uploadStatus: 'ready',
+          sourceFileSizeBytes: input.size ?? 0,
+          name: input.name,
+          sourceDurationInFrames: durationInFrames,
+          startFrame: lastEnd,
+          durationInFrames,
+          trimBeforeFrames: 0,
+          trimAfterFrames: null,
+          trackIndex,
+          x: layout.x,
+          y: layout.y,
+          width: layout.width,
+          height: layout.height,
+          rotation: 0,
+          opacity: 1,
+          borderRadius: 0,
+          cropLeft: 0,
+          cropTop: 0,
+          cropRight: 0,
+          cropBottom: 0,
+          playbackRate: 1,
+          volumeDb: 0,
+          muted: false,
+          visible: true,
+          videoFadeInFrames: 0,
+          videoFadeOutFrames: 0,
+          audioFadeInFrames: 0,
+          audioFadeOutFrames: 0,
+        }
+        return [...prev, clip]
+      })
+    },
+    [height, width],
+  )
 
   const addTextClip = useCallback(() => {
     const id = crypto.randomUUID()
@@ -276,6 +358,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       setShowCanvasRulers,
       toggleCanvasRulers,
       addFiles,
+      addExistingSource,
       addTextClip,
       updateClip,
       removeClip,
@@ -287,6 +370,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       addFiles,
+      addExistingSource,
       addTextClip,
       clips,
       currentFrame,

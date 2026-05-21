@@ -48,6 +48,12 @@ export type EditorState = {
     files: FileList | File[],
     placement?: { startFrame?: number; trackIndex?: number },
   ) => Promise<void>
+  addExistingSource: (input: {
+    url: string
+    name: string
+    contentType?: string
+    size?: number
+  }) => Promise<void>
   addTextClip: () => void
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void

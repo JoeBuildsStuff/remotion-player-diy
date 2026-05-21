@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import {
   Clock3,
   Clapperboard,
+  History,
   PanelTop,
   Plus,
   RectangleHorizontal,
@@ -38,6 +39,7 @@ import { useSidebar } from '@/components/ui/sidebar'
 import type { Clip } from '../model/editor-types'
 import { Section } from './inspector-controls'
 import { MediaInspector } from './media-inspector'
+import { PreviousUploads } from './previous-uploads'
 
 function formatDuration(frames: number, fps: number) {
   const totalSeconds = frames / fps
@@ -115,7 +117,7 @@ export function CanvasInspector({
   setHeight: (value: number) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
-  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips'])
+  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips', 'previous'])
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const { state: sidebarState, setOpen } = useSidebar()
 
@@ -313,7 +315,6 @@ export function CanvasInspector({
                 <TooltipContent>Add media</TooltipContent>
               </Tooltip>
             )}
-            last
           >
             <MediaInspector
               clips={clips}
@@ -322,6 +323,20 @@ export function CanvasInspector({
               selectedClipId={selectedClipId}
               setSelectedClipId={setSelectedClipId}
             />
+          </Section>
+
+          <Section
+            value="previous"
+            title="Previous Uploads"
+            icon={History}
+            onTriggerClick={(value) => {
+              if (sidebarState !== 'collapsed') return
+              setOpen(true)
+              setOpenSections([value])
+            }}
+            last
+          >
+            <PreviousUploads />
           </Section>
         </Accordion>
       </ScrollArea>

@@ -10,6 +10,7 @@ import type { Hono } from 'hono'
 
 import { signPathname, verifySignature } from './sign.js'
 import type {
+  ListedSource,
   PurgeResult,
   StorageAdapter,
   StoredObject,
@@ -95,6 +96,33 @@ export class LocalStorageAdapter implements StorageAdapter {
       const rel = c.req.path.replace(/^\/media\/renders\//, '')
       return this.serveMedia('renders', this.cfg.rendersDir, rel, c.req.raw)
     })
+  }
+
+  async listSources(): Promise<ListedSource[]> {
+    const entries = await readdir(this.cfg.sourcesDir).catch(() => [])
+    const out: ListedSource[] = []
+    for (const filename of entries) {
+      const full = path.join(this.cfg.sourcesDir, filename)
+      const s = await stat(full).catch(() => null)
+      if (!s || !s.isFile()) continue
+      const pathname = `sources/${filename}`
+      // Filenames are written as `${uuid}-${safeName}`; strip the uuid+dash so
+      // the UI shows the user's original name.
+      const displayName = filename.replace(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i,
+        '',
+      )
+      out.push({
+        url: this.buildUrl(pathname, this.cfg.sourcesTtlDays),
+        pathname,
+        name: displayName || filename,
+        size: s.size,
+        uploadedAt: s.mtimeMs,
+        contentType: MIME[path.extname(filename).toLowerCase()],
+      })
+    }
+    out.sort((a, b) => b.uploadedAt - a.uploadedAt)
+    return out
   }
 
   async purgeSources(ttlDays: number): Promise<PurgeResult> {

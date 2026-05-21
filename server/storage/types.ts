@@ -14,6 +14,15 @@ export interface StoredObject {
   pathname: string // logical key, e.g. "sources/abc-clip.mp4"
 }
 
+export interface ListedSource {
+  url: string
+  pathname: string
+  name: string // user-visible filename (suffix after the random id)
+  size: number
+  uploadedAt: number // ms since epoch
+  contentType?: string
+}
+
 export interface PurgeResult {
   scope: 'sources' | 'renders'
   scanned: number
@@ -48,4 +57,6 @@ export interface StorageAdapter {
 
   purgeSources(ttlDays: number): Promise<PurgeResult>
   purgeRenders(ttlDays: number): Promise<PurgeResult>
+
+  listSources(): Promise<ListedSource[]>
 }

@@ -26,6 +26,38 @@ export type UploadResult = {
   pathname: string
 }
 
+export type ListedSource = {
+  url: string
+  pathname: string
+  name: string
+  size: number
+  uploadedAt: number
+  contentType?: string
+}
+
+/**
+ * Lists previously uploaded source media. Hits the same /api/sources endpoint
+ * on Vercel and selfhost — both gate it behind the shared secret.
+ */
+export async function listSources(): Promise<ListedSource[]> {
+  if (!RENDERING_AVAILABLE) {
+    throw new Error(RENDERING_DISABLED_MESSAGE)
+  }
+  if (!SHARED_SECRET) {
+    throw new Error(
+      'VITE_RENDER_SHARED_SECRET is not set — cannot list source media.',
+    )
+  }
+  const res = await fetch('/api/sources', {
+    headers: { 'x-render-secret': SHARED_SECRET },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to list sources (${res.status})`)
+  }
+  const json = (await res.json()) as { sources: ListedSource[] }
+  return json.sources
+}
+
 /**
  * Uploads a File and returns its public URL.
  *

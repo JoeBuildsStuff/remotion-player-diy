@@ -66,7 +66,7 @@ function ClipThumbnail({ clip }: { clip: Clip }) {
             src={clip.src}
             width={56}
             height={40}
-            color="var(--editor-audio-border)"
+            color="var(--foreground)"
           />
         ) : (
           <span className="flex h-full w-full items-center justify-center">

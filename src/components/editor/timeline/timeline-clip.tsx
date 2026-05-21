@@ -15,12 +15,20 @@ import {
 } from './timeline-geometry'
 import { VideoStillStrip } from './video-still-strip'
 
-function timelineClipBadgeVariant(type: Clip['type']) {
-  if (type === 'video') return 'blue'
-  if (type === 'audio') return 'green'
-  if (type === 'image') return 'purple'
-  if (type === 'text') return 'amber'
-  return 'secondary'
+function timelineClipBadgeClass(type: Clip['type']) {
+  if (type === 'video') {
+    return 'bg-sky-500 text-sky-200 ring-sky-400/30 border-sky-300/20'
+  }
+  if (type === 'audio') {
+    return 'bg-emerald-500 text-emerald-200 ring-emerald-400/30 border-emerald-300/20'
+  }
+  if (type === 'image') {
+    return 'bg-violet-500 text-violet-200 ring-violet-400/30 border-violet-300/20'
+  }
+  if (type === 'text') {
+    return 'bg-slate-400 text-slate-200 ring-slate-300/30 border-slate-200/20'
+  }
+  return 'bg-slate-400 text-slate-200 ring-slate-300/30 border-slate-200/20'
 }
 
 export function TimelineClip({
@@ -65,12 +73,12 @@ export function TimelineClip({
     })
   const selectionRing =
     clip.type === 'audio'
-      ? 'ring-editor-audio'
+      ? 'ring-emerald-400/30'
       : clip.type === 'image'
-        ? 'ring-editor-image'
+        ? 'ring-violet-400/30'
         : clip.type === 'text'
-          ? 'ring-editor-text'
-          : 'ring-editor-selection'
+          ? 'ring-slate-300/30'
+          : 'ring-sky-400/30'
   const isCompactClip = clip.type === 'audio' || clip.type === 'text'
   const clipTop = isCompactClip
     ? (TRACK_HEIGHT - COMPACT_CLIP_HEIGHT) / 2
@@ -135,16 +143,17 @@ export function TimelineClip({
           src={clip.src}
           width={width}
           height={COMPACT_CLIP_HEIGHT - 4}
-          color="var(--editor-audio-border)"
+          color="var(--foreground)"
         />
       ) : null}
       {clip.type === 'video' && clip.src && width > 0 ? (
         <VideoStillStrip clip={clip} fps={fps} width={width} />
       ) : null}
       <Badge
-        variant={timelineClipBadgeVariant(clip.type)}
+        variant="outline"
         className={cn(
-          'relative z-[1] max-w-full justify-start truncate px-1 text-[10px] shadow-sm backdrop-blur-[2px] transition-opacity',
+          'relative z-1 max-w-full justify-start truncate border px-1 text-[10px] shadow-sm ring-1 backdrop-blur-[2px] transition-opacity',
+          timelineClipBadgeClass(clip.type),
           clip.type === 'text'
             ? 'opacity-100'
             : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',

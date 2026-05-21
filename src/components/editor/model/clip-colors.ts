@@ -39,8 +39,8 @@ export function clipColorVars(type: ClipType): ClipColorVars {
 }
 
 export function timelineClipColorClass(type: ClipType): string {
-  if (type === 'audio') return 'bg-editor-audio-fill border-editor-audio-border'
-  if (type === 'image') return 'bg-editor-image-fill border-editor-image-border'
-  if (type === 'text') return 'bg-editor-text-fill border-editor-text-border'
-  return 'bg-editor-selection-fill border-editor-selection-border'
+  if (type === 'audio') return 'bg-background border-emerald-300/20'
+  if (type === 'image') return 'bg-background border-violet-300/20'
+  if (type === 'text') return 'bg-background border-slate-200/20'
+  return 'bg-background border-sky-300/20'
 }

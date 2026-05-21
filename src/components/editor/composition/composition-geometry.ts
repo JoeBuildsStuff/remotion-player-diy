@@ -326,6 +326,35 @@ export function normalizeRotation(degrees: number) {
   return Math.round(((degrees % 360) + 360) % 360)
 }
 
+const HANDLE_CURSOR_ANGLES: Record<ResizeHandle, number> = {
+  e: 0,
+  se: 45,
+  s: 90,
+  sw: 135,
+  w: 180,
+  nw: 225,
+  n: 270,
+  ne: 315,
+}
+
+const CURSORS_BY_ANGLE: Record<number, string> = {
+  0: 'ew-resize',
+  45: 'nwse-resize',
+  90: 'ns-resize',
+  135: 'nesw-resize',
+}
+
+export function resizeCursorForRotation(
+  handle: ResizeHandle,
+  rotation: number,
+) {
+  const angle = normalizeRotation(HANDLE_CURSOR_ANGLES[handle] + rotation)
+  const snappedAngle = Math.round(angle / 45) * 45
+  const axisAngle = normalizeRotation(snappedAngle) % 180
+
+  return CURSORS_BY_ANGLE[axisAngle]
+}
+
 export function sortOutlines(
   clips: Clip[],
   selectedClipId: string | null | undefined,

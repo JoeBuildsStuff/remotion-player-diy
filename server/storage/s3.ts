@@ -25,6 +25,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import type {
+  ListedSource,
   PurgeResult,
   StorageAdapter,
   StoredObject,
@@ -146,6 +147,43 @@ export class S3StorageAdapter implements StorageAdapter {
 
   registerRoutes(_app: Hono): void {
     // No-op — URLs go straight to S3 / CDN.
+  }
+
+  async listSources(): Promise<ListedSource[]> {
+    const prefix = this.cfg.sourcesPrefix.endsWith('/')
+      ? this.cfg.sourcesPrefix
+      : `${this.cfg.sourcesPrefix}/`
+    const out: ListedSource[] = []
+    let token: string | undefined
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.cfg.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      )
+      for (const obj of page.Contents ?? []) {
+        if (!obj.Key) continue
+        const filename = obj.Key.slice(prefix.length)
+        if (!filename) continue
+        const displayName = filename.replace(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i,
+          '',
+        )
+        out.push({
+          url: await this.publicUrl(obj.Key, this.cfg.sourcesTtlDays),
+          pathname: `sources/${filename}`,
+          name: displayName || filename,
+          size: obj.Size ?? 0,
+          uploadedAt: obj.LastModified?.getTime() ?? 0,
+          contentType: CONTENT_TYPE_BY_EXT[path.extname(filename).toLowerCase()],
+        })
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined
+    } while (token)
+    out.sort((a, b) => b.uploadedAt - a.uploadedAt)
+    return out
   }
 
   async purgeSources(ttlDays: number): Promise<PurgeResult> {
