@@ -2,7 +2,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ImageIcon, Music, Video } from 'lucide-react'
 import { Player } from '@remotion/player'
 
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
