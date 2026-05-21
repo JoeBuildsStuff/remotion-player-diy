@@ -146,6 +146,26 @@ app.get('/api/sources', async (c) => {
   return c.json({ sources: await storage.listSources() })
 })
 
+app.delete('/api/sources', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  let body: { pathname?: unknown }
+  try {
+    body = (await c.req.json()) as { pathname?: unknown }
+  } catch {
+    return c.text('Invalid JSON body', 400)
+  }
+  if (typeof body.pathname !== 'string' || !body.pathname.startsWith('sources/')) {
+    return c.text('Missing or invalid pathname', 400)
+  }
+  try {
+    await storage.deleteSource(body.pathname)
+  } catch (err) {
+    return c.text(err instanceof Error ? err.message : 'Delete failed', 400)
+  }
+  return c.json({ ok: true })
+})
+
 // ─── /api/render ──────────────────────────────────────────────────────────
 
 const ExportSettingsSchema = z.object({

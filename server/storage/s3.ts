@@ -186,6 +186,20 @@ export class S3StorageAdapter implements StorageAdapter {
     return out
   }
 
+  async deleteSource(pathname: string): Promise<void> {
+    const filename = pathname.replace(/^sources\//, '')
+    if (!filename || filename.includes('..')) {
+      throw new Error(`Invalid source pathname: ${pathname}`)
+    }
+    const key = joinKey(this.cfg.sourcesPrefix, filename)
+    await this.client.send(
+      new DeleteObjectsCommand({
+        Bucket: this.cfg.bucket,
+        Delete: { Objects: [{ Key: key }], Quiet: true },
+      }),
+    )
+  }
+
   async purgeSources(ttlDays: number): Promise<PurgeResult> {
     return this.purge('sources', this.cfg.sourcesPrefix, ttlDays)
   }

@@ -59,6 +59,36 @@ export async function listSources(): Promise<ListedSource[]> {
 }
 
 /**
+ * Deletes a previously uploaded source. Both deploys accept `pathname`; the
+ * Vercel handler additionally prefers `url` since @vercel/blob.del expects the
+ * full blob URL.
+ */
+export async function deleteSource(source: {
+  url: string
+  pathname: string
+}): Promise<void> {
+  if (!RENDERING_AVAILABLE) {
+    throw new Error(RENDERING_DISABLED_MESSAGE)
+  }
+  if (!SHARED_SECRET) {
+    throw new Error(
+      'VITE_RENDER_SHARED_SECRET is not set — cannot delete source media.',
+    )
+  }
+  const res = await fetch('/api/sources', {
+    method: 'DELETE',
+    headers: {
+      'x-render-secret': SHARED_SECRET,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ url: source.url, pathname: source.pathname }),
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to delete source (${res.status})`)
+  }
+}
+
+/**
  * Uploads a File and returns its public URL.
  *
  * On Vercel: token from /api/upload, then direct PUT to Vercel Blob.

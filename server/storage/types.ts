@@ -59,4 +59,7 @@ export interface StorageAdapter {
   purgeRenders(ttlDays: number): Promise<PurgeResult>
 
   listSources(): Promise<ListedSource[]>
+
+  /** Delete a single source by its logical pathname (e.g. "sources/abc.mp4"). */
+  deleteSource(pathname: string): Promise<void>
 }

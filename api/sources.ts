@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob'
+import { del, list } from '@vercel/blob'
 
 // Lists previously uploaded source media so the editor can re-attach a clip
 // without re-uploading. Same shape as the selfhost server's /api/sources.
@@ -58,4 +58,49 @@ export async function GET(request: Request): Promise<Response> {
 
   sources.sort((a, b) => b.uploadedAt - a.uploadedAt)
   return Response.json({ sources })
+}
+
+export async function DELETE(request: Request): Promise<Response> {
+  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
+    return new Response('Cloud uploads are disabled on this deployment.', {
+      status: 403,
+    })
+  }
+  if (!SHARED_SECRET) {
+    return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
+      status: 500,
+    })
+  }
+  if (request.headers.get('x-render-secret') !== SHARED_SECRET) {
+    return unauthorized()
+  }
+
+  let body: { url?: unknown; pathname?: unknown }
+  try {
+    body = (await request.json()) as { url?: unknown; pathname?: unknown }
+  } catch {
+    return new Response('Invalid JSON body', { status: 400 })
+  }
+
+  // @vercel/blob.del takes the full URL — list() returns it as blob.url. The
+  // client sends both so we can fall back gracefully.
+  const target =
+    typeof body.url === 'string' && body.url
+      ? body.url
+      : typeof body.pathname === 'string' && body.pathname.startsWith('sources/')
+        ? body.pathname
+        : null
+  if (!target) {
+    return new Response('Missing url or pathname', { status: 400 })
+  }
+
+  try {
+    await del(target)
+  } catch (err) {
+    return new Response(
+      err instanceof Error ? err.message : 'Delete failed',
+      { status: 400 },
+    )
+  }
+  return Response.json({ ok: true })
 }

@@ -125,6 +125,17 @@ export class LocalStorageAdapter implements StorageAdapter {
     return out
   }
 
+  async deleteSource(pathname: string): Promise<void> {
+    const rel = pathname.replace(/^sources\//, '')
+    if (!rel || rel.includes('/') || rel.includes('..')) {
+      // Defensive: callers can only address files inside sources/, no nesting,
+      // no traversal.
+      throw new Error(`Invalid source pathname: ${pathname}`)
+    }
+    const full = path.join(this.cfg.sourcesDir, rel)
+    await unlink(full)
+  }
+
   async purgeSources(ttlDays: number): Promise<PurgeResult> {
     return this.purge('sources', this.cfg.sourcesDir, ttlDays)
   }

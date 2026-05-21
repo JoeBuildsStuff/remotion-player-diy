@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import {
   Clock3,
   Clapperboard,
-  History,
+  FolderOpen,
   PanelTop,
   Plus,
   RectangleHorizontal,
@@ -37,9 +37,10 @@ import {
 } from '@/components/ui/tooltip'
 import { useSidebar } from '@/components/ui/sidebar'
 import type { Clip } from '../model/editor-types'
+import { RENDERING_AVAILABLE } from '../model/render-mode'
 import { Section } from './inspector-controls'
 import { MediaInspector } from './media-inspector'
-import { PreviousUploads } from './previous-uploads'
+import { MediaLibraryDialog } from './media-library-dialog'
 
 function formatDuration(frames: number, fps: number) {
   const totalSeconds = frames / fps
@@ -117,7 +118,8 @@ export function CanvasInspector({
   setHeight: (value: number) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
-  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips', 'previous'])
+  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips'])
+  const [libraryOpen, setLibraryOpen] = useState(false)
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const { state: sidebarState, setOpen } = useSidebar()
 
@@ -299,22 +301,42 @@ export function CanvasInspector({
               setOpenSections([value])
             }}
             headerAction={(
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Add media"
-                    className="size-7"
-                    onClick={() => mediaInputRef.current?.click()}
-                  >
-                    <Plus className="size-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Add media</TooltipContent>
-              </Tooltip>
+              <div className="flex items-center gap-0.5">
+                {RENDERING_AVAILABLE ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Open media library"
+                        className="size-7"
+                        onClick={() => setLibraryOpen(true)}
+                      >
+                        <FolderOpen className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Media library</TooltipContent>
+                  </Tooltip>
+                ) : null}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Add media"
+                      className="size-7"
+                      onClick={() => mediaInputRef.current?.click()}
+                    >
+                      <Plus className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add media</TooltipContent>
+                </Tooltip>
+              </div>
             )}
+            last
           >
             <MediaInspector
               clips={clips}
@@ -324,22 +346,12 @@ export function CanvasInspector({
               setSelectedClipId={setSelectedClipId}
             />
           </Section>
-
-          <Section
-            value="previous"
-            title="Previous Uploads"
-            icon={History}
-            onTriggerClick={(value) => {
-              if (sidebarState !== 'collapsed') return
-              setOpen(true)
-              setOpenSections([value])
-            }}
-            last
-          >
-            <PreviousUploads />
-          </Section>
         </Accordion>
       </ScrollArea>
+      <MediaLibraryDialog
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+      />
     </div>
   )
 }
