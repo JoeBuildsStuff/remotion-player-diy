@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
+import { Editor } from '@/components/editor/editor'
 import { EditorPage } from '@/components/editor/editor-page'
+import { RENDERING_AVAILABLE } from '@/components/editor/model/render-mode'
 import { ProjectsPage } from '@/components/projects/projects-page'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -9,8 +11,14 @@ function App() {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<ProjectsPage />} />
-          <Route path="/editor/:projectId" element={<EditorPage />} />
+          {RENDERING_AVAILABLE ? (
+            <>
+              <Route path="/" element={<ProjectsPage />} />
+              <Route path="/editor/:projectId" element={<EditorPage />} />
+            </>
+          ) : (
+            <Route path="/" element={<Editor />} />
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
