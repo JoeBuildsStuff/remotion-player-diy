@@ -31,14 +31,14 @@ export function EditorShell() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
       {showDemoBanner ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200">
+        <div className="relative flex shrink-0 items-center justify-center border-b border-transparent bg-blue-600 px-10 py-1.5 text-center text-xs font-medium text-white ring-1 ring-inset ring-blue-500/30 dark:bg-blue-500 dark:text-white">
           <span>
             Demo mode — changes won&rsquo;t be saved and rendering is disabled.{' '}
             <a
               href="https://github.com/joeBlockchain/remotion-player-diy#self-hosting"
               target="_blank"
               rel="noreferrer"
-              className="underline underline-offset-2 hover:text-amber-100"
+              className="underline underline-offset-2 hover:text-white/90"
             >
               Self-host
             </a>{' '}
@@ -48,7 +48,7 @@ export function EditorShell() {
             type="button"
             aria-label="Dismiss demo notice"
             onClick={() => setDemoBannerDismissed(true)}
-            className="rounded p-0.5 hover:bg-amber-500/20"
+            className="absolute right-3 rounded p-0.5 hover:bg-blue-500/30"
           >
             <X className="size-3.5" />
           </button>
