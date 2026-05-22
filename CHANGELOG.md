@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.7.0...v1.8.0) (2026-05-22)
+
+
+### Features
+
+* implement demo mode banner in editor shell and conditional routing in App component ([ec60668](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/ec606685c860364b63733d23ebff02d764ae6c0a))
+
 # [1.7.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.6.0...v1.7.0) (2026-05-22)
 
 
