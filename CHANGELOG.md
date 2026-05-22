@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.6.0...v1.7.0) (2026-05-22)
+
+
+### Features
+
+* implement project management API and enhance local development setup ([0739ce7](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/0739ce7b687cef7386bfc97f6ebf5183b5970123))
+
 # [1.6.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.5.0...v1.6.0) (2026-05-21)
 
 
