@@ -70,4 +70,12 @@ export default defineConfig({
   optimizeDeps: {
     include: ['mediabunny'],
   },
+  server: {
+    // Proxy API + /media to the self-host Node server during local dev.
+    // Run `pnpm server:dev` alongside `pnpm dev` — see docs/self-hosting.md.
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/media': 'http://localhost:3000',
+    },
+  },
 })

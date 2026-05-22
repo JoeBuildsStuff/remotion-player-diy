@@ -13,6 +13,7 @@ export interface StorageEnv {
   DATA_DIR?: string
   SOURCES_DIR?: string
   RENDERS_DIR?: string
+  PROJECTS_DIR?: string
   PUBLIC_BASE_URL: string
   MEDIA_URL_SIGNING_SECRET?: string
   SOURCES_TTL_DAYS: number
@@ -26,6 +27,7 @@ export interface StorageEnv {
   S3_SECRET_ACCESS_KEY?: string
   S3_SOURCES_PREFIX?: string
   S3_RENDERS_PREFIX?: string
+  S3_PROJECTS_PREFIX?: string
   S3_PUBLIC_BASE_URL?: string
   S3_TMP_DIR?: string
 }
@@ -51,6 +53,7 @@ export async function createStorageAdapter(
       secretAccessKey: env.S3_SECRET_ACCESS_KEY,
       sourcesPrefix: env.S3_SOURCES_PREFIX ?? 'sources',
       rendersPrefix: env.S3_RENDERS_PREFIX ?? 'renders',
+      projectsPrefix: env.S3_PROJECTS_PREFIX ?? 'projects',
       publicBaseUrl: env.S3_PUBLIC_BASE_URL,
       sourcesTtlDays: env.SOURCES_TTL_DAYS,
       rendersTtlDays: env.RENDERS_TTL_DAYS,
@@ -69,9 +72,11 @@ export async function createStorageAdapter(
   const dataDir = env.DATA_DIR ?? path.resolve('data')
   const sourcesDir = env.SOURCES_DIR ?? path.join(dataDir, 'sources')
   const rendersDir = env.RENDERS_DIR ?? path.join(dataDir, 'renders')
+  const projectsDir = env.PROJECTS_DIR ?? path.join(dataDir, 'projects')
   const adapter = new LocalStorageAdapter({
     sourcesDir,
     rendersDir,
+    projectsDir,
     publicBaseUrl: env.PUBLIC_BASE_URL,
     signingSecret: env.MEDIA_URL_SIGNING_SECRET || undefined,
     sourcesTtlDays: env.SOURCES_TTL_DAYS,

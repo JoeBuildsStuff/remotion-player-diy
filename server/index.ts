@@ -1,3 +1,5 @@
+import './load-env.js'
+
 // Self-hosted Node server.
 //
 // Single binary that serves the built Vite SPA, exposes /api/upload and
@@ -26,6 +28,11 @@ import { z } from 'zod'
 
 import { COMP_NAME } from '../remotion/constants.js'
 import { ClipSchema } from '../remotion/schema.js'
+import {
+  ProjectSchema,
+  makeEmptyProject,
+  DEFAULT_PROJECT_NAME,
+} from '../shared/project-schema.js'
 import { normalizeRenderScalePercent } from '../shared/render-scale.js'
 import type { RenderProgress } from '../shared/sse.js'
 import { createStorageAdapter, type StorageAdapter } from './storage/index.js'
@@ -49,6 +56,7 @@ const storage: StorageAdapter = await createStorageAdapter({
   DATA_DIR: process.env.DATA_DIR,
   SOURCES_DIR: process.env.SOURCES_DIR,
   RENDERS_DIR: process.env.RENDERS_DIR,
+  PROJECTS_DIR: process.env.PROJECTS_DIR,
   PUBLIC_BASE_URL,
   MEDIA_URL_SIGNING_SECRET: process.env.MEDIA_URL_SIGNING_SECRET,
   SOURCES_TTL_DAYS,
@@ -61,6 +69,7 @@ const storage: StorageAdapter = await createStorageAdapter({
   S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
   S3_SOURCES_PREFIX: process.env.S3_SOURCES_PREFIX,
   S3_RENDERS_PREFIX: process.env.S3_RENDERS_PREFIX,
+  S3_PROJECTS_PREFIX: process.env.S3_PROJECTS_PREFIX,
   S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL,
   S3_TMP_DIR: process.env.S3_TMP_DIR,
 })
@@ -164,6 +173,75 @@ app.delete('/api/sources', async (c) => {
     return c.text(err instanceof Error ? err.message : 'Delete failed', 400)
   }
   return c.json({ ok: true })
+})
+
+// ─── /api/projects ────────────────────────────────────────────────────────
+// Persistent project documents (timeline + canvas state). Same shared-secret
+// auth as /api/sources. Media referenced by a project still lives under
+// sources/ and is governed by the existing TTL — deleting a project does not
+// delete its media.
+
+app.get('/api/projects', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  return c.json({ projects: await storage.listProjects() })
+})
+
+app.post('/api/projects', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  let name: string | undefined
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { name?: unknown }
+    if (typeof body.name === 'string' && body.name.trim() !== '') {
+      name = body.name.trim()
+    }
+  } catch {
+    // Empty / invalid body is fine — we'll create with the default name.
+  }
+  const project = makeEmptyProject({
+    id: randomUUID(),
+    name: name ?? DEFAULT_PROJECT_NAME,
+  })
+  await storage.saveProject(project)
+  return c.json(project)
+})
+
+app.get('/api/projects/:id', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  const project = await storage.getProject(c.req.param('id'))
+  if (!project) return c.text('Not found', 404)
+  return c.json(project)
+})
+
+app.put('/api/projects/:id', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  const id = c.req.param('id')
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.text('Invalid JSON body', 400)
+  }
+  const parsed = ProjectSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.text(`Invalid project: ${parsed.error.message}`, 400)
+  }
+  if (parsed.data.id !== id) {
+    return c.text('Project id in body does not match URL', 400)
+  }
+  const next = { ...parsed.data, updatedAt: Date.now() }
+  await storage.saveProject(next)
+  return c.json(next)
+})
+
+app.delete('/api/projects/:id', async (c) => {
+  const denied = requireSecret(c.req.raw)
+  if (denied) return denied
+  await storage.deleteProject(c.req.param('id'))
+  return new Response(null, { status: 204 })
 })
 
 // ─── /api/render ──────────────────────────────────────────────────────────

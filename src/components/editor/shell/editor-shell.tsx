@@ -1,5 +1,8 @@
 import type { CSSProperties } from 'react'
+import { ChevronLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
+import { Button } from '@/components/ui/button'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -19,7 +22,7 @@ import { Timeline } from '../timeline/timeline'
 import { TransportBar } from '../transport/transport-bar'
 
 export function EditorShell() {
-  const { showCanvasRulers } = useEditor()
+  const { showCanvasRulers, projectId } = useEditor()
   const sidebarTriggerOffset = showCanvasRulers ? `${RULER_SIZE}px` : '0px'
 
   return (
@@ -50,6 +53,14 @@ export function EditorShell() {
                   size="icon"
                   className="bg-secondary"
                 />
+                {projectId ? (
+                  <Button asChild variant="secondary" className="gap-1.5">
+                    <Link to="/" aria-label="Back to projects">
+                      <ChevronLeft />
+                      Projects
+                    </Link>
+                  </Button>
+                ) : null}
               </header>
               <Preview />
             </SidebarInset>

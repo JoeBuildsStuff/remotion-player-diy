@@ -1,17 +1,8 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ImageIcon, Music, Video } from 'lucide-react'
 import { Player } from '@remotion/player'
 
-import { Button } from '@/components/ui/button'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty'
-
+import { MediaEmptyState } from '../media/media-empty-state'
+import { useMediaFileDrop } from '../media/use-media-file-drop'
 import { VideoComposition } from '../composition/video-composition'
 import { useEditor } from '../model/editor-context-value'
 import { CanvasGuidesOverlay, useCanvasGuides } from './canvas-guides'
@@ -39,8 +30,8 @@ export function Preview() {
     setCurrentFrame,
     setIsPlaying,
   } = useEditor()
-  const [isDragging, setDragging] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const { isDragging, dropZoneProps } = useMediaFileDrop({ onDropFiles: addFiles })
   const previewRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const canvasWrapperRef = useRef<HTMLDivElement | null>(null)
@@ -142,18 +133,7 @@ export function Preview() {
       ref={previewRef}
       data-preview-pane
       className="relative flex min-w-0 flex-1 overflow-hidden bg-input dark:bg-input/30"
-      onDragOver={(e) => {
-        e.preventDefault()
-        setDragging(true)
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault()
-        setDragging(false)
-        if (e.dataTransfer.files.length) {
-          void addFiles(e.dataTransfer.files)
-        }
-      }}
+      {...dropZoneProps}
     >
       <input
         ref={mediaInputRef}
@@ -195,34 +175,14 @@ export function Preview() {
         }}
       >
         {clips.length === 0 ? (
-          <Empty className="border border-border/40 max-w-sm mx-8 rounded-lg bg-background/15 backdrop-blur-md shadow-none">
-            <EmptyHeader>
-            <EmptyMedia className="relative mb-3 h-10 w-20" aria-hidden>
-              <div className="absolute left-0 top-1/2 z-10 flex size-8 translate-y-[-40%] -rotate-12 items-center justify-center rounded-md border border-border/60 bg-background/60 backdrop-blur-sm text-muted-foreground shadow-sm">
-                <ImageIcon className="size-4" />
-              </div>
-              <div className="absolute left-1/2 top-1/2 z-20 flex size-8 -translate-x-1/2 translate-y-[-60%] items-center justify-center rounded-md border border-border/60 bg-background/60 backdrop-blur-sm text-foreground shadow-sm">
-                <Video className="size-4" />
-              </div>
-              <div className="absolute right-0 top-1/2 z-10 flex size-8 translate-y-[-40%] rotate-12 items-center justify-center rounded-md border border-border/60 bg-background/60 backdrop-blur-sm text-muted-foreground shadow-sm">
-                <Music className="size-4" />
-              </div>
-            </EmptyMedia>
-              <EmptyTitle>Add your media</EmptyTitle>
-              <EmptyDescription>
-                Drop videos, images, or audio here to get started.
-              </EmptyDescription>
-              </EmptyHeader>
-            <EmptyContent>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => mediaInputRef.current?.click()}
-              >
-                Add items
-              </Button>
-            </EmptyContent>
-          </Empty>
+          <MediaEmptyState
+            className="mx-8 max-w-sm shadow-none"
+            iconVariant="glass"
+            title="Add your media"
+            description="Drop videos, images, or audio here to get started."
+            actionLabel="Add items"
+            onAction={() => mediaInputRef.current?.click()}
+          />
         ) : (
           <Player
             ref={playerRef}

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AudioLines,
   Image as ImageIcon,
+  LayoutGrid,
   Loader2,
   RefreshCw,
   Search,
   Trash2,
   Video,
+  type LucideIcon,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -29,6 +31,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
+import { MediaEmptyState } from '../media/media-empty-state'
 import { useEditor } from '../model/editor-context-value'
 import { RENDERING_AVAILABLE } from '../model/render-mode'
 import { inferClipType } from '../model/media-import'
@@ -39,6 +42,17 @@ import {
 } from '../model/upload-client'
 
 type Filter = 'all' | 'video' | 'image' | 'audio'
+
+const FILTER_OPTIONS: {
+  value: Filter
+  label: string
+  icon: LucideIcon
+}[] = [
+  { value: 'all', label: 'All', icon: LayoutGrid },
+  { value: 'video', label: 'Video', icon: Video },
+  { value: 'image', label: 'Image', icon: ImageIcon },
+  { value: 'audio', label: 'Audio', icon: AudioLines },
+]
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -69,11 +83,9 @@ function TypeIcon({
   type: ReturnType<typeof inferClipType>
   className?: string
 }) {
-  const cls = cn('size-5 text-muted-foreground', className)
-  if (type === 'video') return <Video className={cls} />
-  if (type === 'audio') return <AudioLines className={cls} />
-  if (type === 'image') return <ImageIcon className={cls} />
-  return <ImageIcon className={cls} />
+  const option = FILTER_OPTIONS.find((item) => item.value === type)
+  const Icon = option?.icon ?? ImageIcon
+  return <Icon className={cn('size-5 text-muted-foreground', className)} />
 }
 
 function Thumbnail({ source }: { source: ListedSource }) {
@@ -106,11 +118,13 @@ function Thumbnail({ source }: { source: ListedSource }) {
 export function MediaLibraryDialog({
   open,
   onOpenChange,
+  onAddMedia,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAddMedia?: () => void
 }) {
-  const { addExistingSource } = useEditor()
+  const { addExistingSource, addFiles } = useEditor()
   const [sources, setSources] = useState<ListedSource[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -155,6 +169,14 @@ export function MediaLibraryDialog({
     })
   }, [filter, query, sources])
 
+  const handleDropFiles = useCallback(
+    async (files: FileList) => {
+      await addFiles(files)
+      void load()
+    },
+    [addFiles, load],
+  )
+
   const handleAdd = async (source: ListedSource) => {
     setAdding(source.pathname)
     try {
@@ -189,7 +211,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[85vh] max-h-[85vh] w-[95vw] max-w-5xl flex-col gap-4 text-sm">
+      <DialogContent className="flex h-[85vh] max-h-[85vh] w-[95vw] max-w-[calc(100%-2rem)] flex-col gap-4 text-sm sm:max-w-5xl lg:max-w-6xl">
         <DialogHeader>
           <DialogTitle className="text-base">Media Library</DialogTitle>
           <DialogDescription>
@@ -221,10 +243,17 @@ export function MediaLibraryDialog({
                 variant="outline"
                 size="sm"
               >
-                <ToggleGroupItem value="all">All</ToggleGroupItem>
-                <ToggleGroupItem value="video">Video</ToggleGroupItem>
-                <ToggleGroupItem value="image">Image</ToggleGroupItem>
-                <ToggleGroupItem value="audio">Audio</ToggleGroupItem>
+                {FILTER_OPTIONS.map(({ value, label, icon: Icon }) => (
+                  <ToggleGroupItem key={value} value={value}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon
+                        className="size-3.5 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
+                      {label}
+                    </span>
+                  </ToggleGroupItem>
+                ))}
               </ToggleGroup>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -255,15 +284,30 @@ export function MediaLibraryDialog({
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : filtered && filtered.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-muted-foreground">
-                  <p className="text-sm">
-                    {sources && sources.length === 0
-                      ? 'No previous uploads yet.'
-                      : 'No results match your filters.'}
-                  </p>
-                  <p className="text-xs">
-                    Drop a file onto the editor or use the “Add media” button to upload.
-                  </p>
+                <div className="flex justify-center pt-8">
+                  {sources && sources.length === 0 ? (
+                    <MediaEmptyState
+                      className="max-w-sm flex-none justify-start"
+                      title="No previous uploads yet"
+                      description="Drop a file here or use the Add media button to upload."
+                      actionLabel={onAddMedia ? 'Add media' : undefined}
+                      onAction={
+                        onAddMedia
+                          ? () => {
+                              onOpenChange(false)
+                              onAddMedia()
+                            }
+                          : undefined
+                      }
+                      onDropFiles={handleDropFiles}
+                    />
+                  ) : (
+                    <MediaEmptyState
+                      className="max-w-sm flex-none justify-start"
+                      title="No results match your filters"
+                      description="Try a different search term or media type."
+                    />
+                  )}
                 </div>
               ) : (
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

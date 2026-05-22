@@ -160,15 +160,26 @@ These are worth knowing if you build your own image:
 
 ## Local development against the server
 
+Set in `.env.local` (you already need matching `RENDER_SHARED_SECRET` / `VITE_RENDER_SHARED_SECRET`):
+
 ```bash
-# Terminal 1: Vite dev server (HMR)
+VITE_DEPLOY_MODE=selfhost
+PUBLIC_BASE_URL=http://localhost:5173
+```
+
+Then run both processes:
+
+```bash
+# Terminal 1: Vite dev server (HMR) — proxies /api and /media to :3000
 pnpm dev
 
-# Terminal 2: Node server with the API and rendering
+# Terminal 2: Node server with the API and rendering (loads .env.local)
 pnpm server:dev
 ```
 
-Vite runs on `:5173`, the server on `:3000`. The simplest way to wire them together is to add a proxy entry to `vite.config.ts` while you iterate, or hit `:3000` directly (it serves a `dist/` from a previous `pnpm build`).
+Open `http://localhost:5173`. In the inspector **Media** section, use the folder icon to open the media library. Upload at least one clip via **Add media** so `/api/sources` has entries under `./data/sources/`.
+
+Vite runs on `:5173`, the server on `:3000`. `vite.config.ts` already proxies `/api` and `/media` to the Node server; you can also hit `:3000` directly after `pnpm build` (it serves `dist/`).
 
 ## Reverse-proxy example: Traefik + Watchtower
 

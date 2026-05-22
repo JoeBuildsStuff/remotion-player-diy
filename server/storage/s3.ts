@@ -20,6 +20,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
+  DeleteObjectCommand,
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -30,6 +31,12 @@ import type {
   StorageAdapter,
   StoredObject,
 } from './types.js'
+import {
+  ProjectSchema,
+  summarize,
+  type Project,
+  type ProjectSummary,
+} from '../../shared/project-schema.js'
 
 export interface S3AdapterConfig {
   bucket: string
@@ -40,6 +47,7 @@ export interface S3AdapterConfig {
   secretAccessKey?: string
   sourcesPrefix: string
   rendersPrefix: string
+  projectsPrefix: string
   /** When set, returned URLs are `${publicBaseUrl}/${key}` instead of presigned. */
   publicBaseUrl?: string
   sourcesTtlDays: number
@@ -88,6 +96,86 @@ export class S3StorageAdapter implements StorageAdapter {
 
   async init() {
     await mkdir(this.cfg.tmpDir, { recursive: true })
+  }
+
+  async listProjects(): Promise<ProjectSummary[]> {
+    const prefix = this.cfg.projectsPrefix.endsWith('/')
+      ? this.cfg.projectsPrefix
+      : `${this.cfg.projectsPrefix}/`
+    const out: ProjectSummary[] = []
+    let token: string | undefined
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.cfg.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      )
+      for (const obj of page.Contents ?? []) {
+        if (!obj.Key || !obj.Key.endsWith('.json')) continue
+        try {
+          const got = await this.client.send(
+            new GetObjectCommand({ Bucket: this.cfg.bucket, Key: obj.Key }),
+          )
+          const raw = await got.Body?.transformToString('utf-8')
+          if (!raw) continue
+          const parsed = ProjectSchema.parse(JSON.parse(raw))
+          out.push(summarize(parsed))
+        } catch (err) {
+          console.warn(`[storage] skipping unreadable project ${obj.Key}:`, err)
+        }
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined
+    } while (token)
+    out.sort((a, b) => b.updatedAt - a.updatedAt)
+    return out
+  }
+
+  async getProject(id: string): Promise<Project | null> {
+    if (!isSafeProjectId(id)) throw new Error(`Invalid project id: ${id}`)
+    const key = joinKey(this.cfg.projectsPrefix, `${id}.json`)
+    try {
+      const got = await this.client.send(
+        new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
+      )
+      const raw = await got.Body?.transformToString('utf-8')
+      if (!raw) return null
+      return ProjectSchema.parse(JSON.parse(raw))
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'name' in err &&
+        (err.name === 'NoSuchKey' || err.name === 'NotFound')
+      ) {
+        return null
+      }
+      throw err
+    }
+  }
+
+  async saveProject(project: Project): Promise<void> {
+    if (!isSafeProjectId(project.id)) {
+      throw new Error(`Invalid project id: ${project.id}`)
+    }
+    const key = joinKey(this.cfg.projectsPrefix, `${project.id}.json`)
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.cfg.bucket,
+        Key: key,
+        Body: JSON.stringify(project),
+        ContentType: 'application/json',
+      }),
+    )
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    if (!isSafeProjectId(id)) throw new Error(`Invalid project id: ${id}`)
+    const key = joinKey(this.cfg.projectsPrefix, `${id}.json`)
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
+    )
   }
 
   async uploadSource(input: {
@@ -271,6 +359,10 @@ function joinKey(prefix: string, name: string): string {
 
 function stripTrailingSlash(s: string): string {
   return s.replace(/\/+$/, '')
+}
+
+function isSafeProjectId(id: string): boolean {
+  return /^[A-Za-z0-9._-]+$/.test(id) && !id.includes('..')
 }
 
 export function defaultTmpDir(): string {

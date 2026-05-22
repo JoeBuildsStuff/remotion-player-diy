@@ -5,20 +5,12 @@ import {
   Pause,
   Play,
   Trash,
-  Music,
   Type,
   Video,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty'
+import { MediaEmptyState } from '../media/media-empty-state'
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +24,7 @@ import type { Clip } from '../model/editor-types'
 type MediaInspectorProps = {
   clips: Clip[]
   onAddMedia: () => void
+  onDropFiles?: (files: FileList) => void | Promise<void>
   removeClip: (id: string) => void
   selectedClipId: string | null
   setSelectedClipId: (id: string | null) => void
@@ -106,6 +99,7 @@ function ClipTypeBadge({ type }: { type: Clip['type'] }) {
 export function MediaInspector({
   clips,
   onAddMedia,
+  onDropFiles,
   removeClip,
   selectedClipId,
   setSelectedClipId,
@@ -162,28 +156,13 @@ export function MediaInspector({
   return (
     <section className="space-y-2">
       {clips.length === 0 ? (
-        <Empty className="gap-2 rounded-lg border border-border px-3 py-4">
-          <EmptyHeader className="gap-1">
-            <EmptyMedia className="relative mb-2 h-10 w-20" aria-hidden>
-              <div className="absolute left-0 top-1/2 z-10 flex size-8 translate-y-[-40%] -rotate-12 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm">
-                <ImageIcon className="size-4" />
-              </div>
-              <div className="absolute left-1/2 top-1/2 z-20 flex size-8 -translate-x-1/2 translate-y-[-60%] items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm">
-                <Video className="size-4" />
-              </div>
-              <div className="absolute right-0 top-1/2 z-10 flex size-8 translate-y-[-40%] rotate-12 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm">
-                <Music className="size-4" />
-              </div>
-            </EmptyMedia>
-            <EmptyTitle>No media yet</EmptyTitle>
-            <EmptyDescription>Add video, image, or audio to begin.</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button type="button" size="sm" onClick={onAddMedia}>
-              Add media
-            </Button>
-          </EmptyContent>
-        </Empty>
+        <MediaEmptyState
+          title="No media yet"
+          description="Drop files here or use Add media to upload."
+          actionLabel="Add media"
+          onAction={onAddMedia}
+          onDropFiles={onDropFiles}
+        />
       ) : (
         <ul className="space-y-1">
           {clips.map((clip) => {

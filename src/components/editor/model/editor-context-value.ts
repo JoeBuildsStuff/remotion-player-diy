@@ -10,6 +10,9 @@ export type ExportSettings = {
 }
 
 export type EditorState = {
+  projectId: string | null
+  projectName: string
+  setProjectName: (v: string) => void
   fps: number
   width: number
   height: number

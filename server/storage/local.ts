@@ -1,7 +1,7 @@
 // Local-filesystem storage adapter — the default. Sources land in SOURCES_DIR,
 // renders in RENDERS_DIR. Bytes are served by /media/* on the same Hono app.
 
-import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
 import path from 'node:path'
@@ -15,10 +15,17 @@ import type {
   StorageAdapter,
   StoredObject,
 } from './types.js'
+import {
+  ProjectSchema,
+  summarize,
+  type Project,
+  type ProjectSummary,
+} from '../../shared/project-schema.js'
 
 export interface LocalAdapterConfig {
   sourcesDir: string
   rendersDir: string
+  projectsDir: string
   publicBaseUrl: string
   signingSecret?: string
   sourcesTtlDays: number
@@ -47,6 +54,51 @@ export class LocalStorageAdapter implements StorageAdapter {
   async init() {
     await mkdir(this.cfg.sourcesDir, { recursive: true })
     await mkdir(this.cfg.rendersDir, { recursive: true })
+    await mkdir(this.cfg.projectsDir, { recursive: true })
+  }
+
+  async listProjects(): Promise<ProjectSummary[]> {
+    const entries = await readdir(this.cfg.projectsDir).catch(() => [])
+    const out: ProjectSummary[] = []
+    for (const filename of entries) {
+      if (!filename.endsWith('.json')) continue
+      const full = path.join(this.cfg.projectsDir, filename)
+      try {
+        const raw = await readFile(full, 'utf8')
+        const parsed = ProjectSchema.parse(JSON.parse(raw))
+        out.push(summarize(parsed))
+      } catch (err) {
+        console.warn(`[storage] skipping unreadable project ${filename}:`, err)
+      }
+    }
+    out.sort((a, b) => b.updatedAt - a.updatedAt)
+    return out
+  }
+
+  async getProject(id: string): Promise<Project | null> {
+    if (!isSafeProjectId(id)) {
+      throw new Error(`Invalid project id: ${id}`)
+    }
+    const full = path.join(this.cfg.projectsDir, `${id}.json`)
+    const raw = await readFile(full, 'utf8').catch(() => null)
+    if (raw == null) return null
+    return ProjectSchema.parse(JSON.parse(raw))
+  }
+
+  async saveProject(project: Project): Promise<void> {
+    if (!isSafeProjectId(project.id)) {
+      throw new Error(`Invalid project id: ${project.id}`)
+    }
+    const full = path.join(this.cfg.projectsDir, `${project.id}.json`)
+    await writeFile(full, JSON.stringify(project, null, 2), 'utf8')
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    if (!isSafeProjectId(id)) {
+      throw new Error(`Invalid project id: ${id}`)
+    }
+    const full = path.join(this.cfg.projectsDir, `${id}.json`)
+    await unlink(full).catch(() => {})
   }
 
   async uploadSource(input: {
@@ -178,6 +230,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     return `${base}?${query}`
   }
 
+  // (helper placed at module bottom)
+
   private async serveMedia(
     scope: 'sources' | 'renders',
     baseDir: string,
@@ -216,4 +270,8 @@ export class LocalStorageAdapter implements StorageAdapter {
       },
     })
   }
+}
+
+function isSafeProjectId(id: string): boolean {
+  return /^[A-Za-z0-9._-]+$/.test(id) && !id.includes('..')
 }

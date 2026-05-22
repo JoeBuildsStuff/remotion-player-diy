@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlayerRef } from '@remotion/player'
 
 import { uploadSourceFile } from './upload-client'
+import { saveProject } from '@/lib/project-client'
+import { DEFAULT_PROJECT_NAME, type Project } from '../../../../shared/project-schema'
 
 import { createMediaClip, createTextClip } from './clip-factory'
 import {
@@ -27,18 +29,35 @@ import {
 import { fitWithinCanvas } from './clip-geometry'
 import { clamp, durationInFramesFor } from './time'
 
-export function EditorProvider({ children }: { children: React.ReactNode }) {
+export function EditorProvider({
+  children,
+  projectId,
+  initialProject,
+}: {
+  children: React.ReactNode
+  projectId?: string
+  initialProject?: Project
+}) {
   const playerRef = useRef<PlayerRef | null>(null)
   const fullscreenElementRef = useRef<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState(1920)
-  const [height, setHeight] = useState(1080)
-  const [volume, setVolume] = useState(0.4)
-  const [exportSettings, setExportSettings] = useState<ExportSettings>({
-    quality: 70,
-    audioBitrateKbps: 128,
-    resolutionScale: 100,
-  })
-  const [clips, setClips] = useState<Clip[]>([])
+  const [projectName, setProjectName] = useState<string>(
+    initialProject?.name ?? DEFAULT_PROJECT_NAME,
+  )
+  const [width, setWidth] = useState(initialProject?.width ?? 1920)
+  const [height, setHeight] = useState(initialProject?.height ?? 1080)
+  const [volume, setVolume] = useState(initialProject?.volume ?? 0.4)
+  const [exportSettings, setExportSettings] = useState<ExportSettings>(
+    initialProject?.exportSettings ?? {
+      quality: 70,
+      audioBitrateKbps: 128,
+      resolutionScale: 100,
+    },
+  )
+  const [clips, setClips] = useState<Clip[]>(
+    // Project clips are stored as JSON and cast back into editor Clips. They
+    // were validated on save and round-trip cleanly; no extra coercion needed.
+    (initialProject?.clips as unknown as Clip[]) ?? [],
+  )
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLooping, setIsLooping] = useState(false)
@@ -321,8 +340,49 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     setShowCanvasRulers((prev) => !prev)
   }, [])
 
+  // Auto-save: persist project on any change to the persisted subset of state.
+  // Skip the first effect run so opening a project doesn't immediately write
+  // back what we just loaded.
+  const createdAtRef = useRef(initialProject?.createdAt ?? Date.now())
+  const hasMountedRef = useRef(false)
+  useEffect(() => {
+    if (!projectId) return
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+    const handle = setTimeout(() => {
+      void saveProject({
+        id: projectId,
+        name: projectName,
+        createdAt: createdAtRef.current,
+        updatedAt: Date.now(),
+        fps: FPS,
+        width,
+        height,
+        volume,
+        exportSettings,
+        clips: clips as unknown as Record<string, unknown>[],
+      }).catch((err) => {
+        console.error('[autosave] failed:', err)
+      })
+    }, 800)
+    return () => clearTimeout(handle)
+  }, [
+    projectId,
+    projectName,
+    width,
+    height,
+    volume,
+    exportSettings,
+    clips,
+  ])
+
   const value: EditorState = useMemo(
     () => ({
+      projectId: projectId ?? null,
+      projectName,
+      setProjectName,
       fps: FPS,
       width,
       height,
@@ -402,6 +462,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       zoomPreviewOut,
       zoomTimelineIn,
       zoomTimelineOut,
+      projectId,
+      projectName,
     ],
   )
 

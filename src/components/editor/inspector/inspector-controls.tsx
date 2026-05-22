@@ -60,26 +60,26 @@ export function Section({
       value={value}
       className="min-w-0 border-0 not-last:border-b-0 data-open:bg-transparent"
     >
-      <div className="relative">
-        <AccordionTrigger
-          onClick={() => onTriggerClick?.(value)}
-          className={`mx-2 my-px min-h-7 overflow-hidden rounded-[calc(var(--radius-sm)+2px)] px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:no-underline group-data-[collapsible=icon]:size-7! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1.5! group-data-[collapsible=icon]:**:data-section-label:hidden group-data-[collapsible=icon]:**:data-[slot=accordion-trigger-icon]:hidden ${
-            headerAction
-              ? 'pr-8 group-data-[collapsible=icon]:pr-2!'
-              : ''
-          }`}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-            <span data-section-label className="truncate">{title}</span>
-          </span>
-        </AccordionTrigger>
+      <AccordionTrigger
+        onClick={() => onTriggerClick?.(value)}
+        className={`mx-2 my-px min-h-7 items-center overflow-hidden rounded-[calc(var(--radius-sm)+2px)] px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:no-underline group-data-[collapsible=icon]:size-7! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1.5! group-data-[collapsible=icon]:**:data-section-label:hidden group-data-[collapsible=icon]:**:data-[slot=accordion-trigger-icon]:hidden${
+          headerAction ? ' gap-1' : ''
+        }`}
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+          <span data-section-label className="truncate">{title}</span>
+        </span>
         {headerAction ? (
-          <div className="absolute top-1/2 right-2 z-10 -translate-y-1/2 group-data-[collapsible=icon]:hidden">
+          <div
+            className="flex shrink-0 items-center gap-0.5 group-data-[collapsible=icon]:hidden"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             {headerAction}
           </div>
         ) : null}
-      </div>
+      </AccordionTrigger>
       <AccordionContent className="min-w-0 px-3 pt-1 group-data-[collapsible=icon]:hidden">{children}</AccordionContent>
     </AccordionItem>
   )

@@ -9,6 +9,8 @@
 
 import type { Hono } from 'hono'
 
+import type { Project, ProjectSummary } from '../../shared/project-schema.js'
+
 export interface StoredObject {
   url: string // public URL the browser/editor will load
   pathname: string // logical key, e.g. "sources/abc-clip.mp4"
@@ -62,4 +64,10 @@ export interface StorageAdapter {
 
   /** Delete a single source by its logical pathname (e.g. "sources/abc.mp4"). */
   deleteSource(pathname: string): Promise<void>
+
+  // Project persistence — JSON blobs keyed by project id under projects/.
+  listProjects(): Promise<ProjectSummary[]>
+  getProject(id: string): Promise<Project | null>
+  saveProject(project: Project): Promise<void>
+  deleteProject(id: string): Promise<void>
 }

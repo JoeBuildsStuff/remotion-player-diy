@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core'
 
 import { useEditor } from '../model/editor-context-value'
+import { hasExternalFiles } from '../media/use-media-file-drop'
 import { timelineClipColorClass } from '../model/clip-colors'
 import type { Clip } from '../model/editor-types'
 import { formatFrame } from '../transport/transport-time'
@@ -161,9 +162,6 @@ export function Timeline() {
     setPlayheadDrag(null)
     endTimelineInteraction()
   }
-
-  const hasExternalFiles = (dataTransfer: React.DragEvent['dataTransfer']) =>
-    Array.from(dataTransfer.types).includes('Files')
 
   const handleExternalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     if (!hasExternalFiles(e.dataTransfer)) return

@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import {
   Clock3,
   Clapperboard,
-  FolderOpen,
+  GalleryThumbnails,
+  Folder,
   PanelTop,
   Plus,
   RectangleHorizontal,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { Accordion } from '@/components/ui/accordion'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   InputGroup,
@@ -36,6 +38,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useSidebar } from '@/components/ui/sidebar'
+import { useEditor } from '../model/editor-context-value'
 import type { Clip } from '../model/editor-types'
 import { RENDERING_AVAILABLE } from '../model/render-mode'
 import { Section } from './inspector-controls'
@@ -118,10 +121,16 @@ export function CanvasInspector({
   setHeight: (value: number) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
-  const [openSections, setOpenSections] = useState(['canvas', 'duration', 'clips'])
+  const [openSections, setOpenSections] = useState([
+    'project',
+    'canvas',
+    'duration',
+    'clips',
+  ])
   const [libraryOpen, setLibraryOpen] = useState(false)
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const { state: sidebarState, setOpen } = useSidebar()
+  const { projectId, projectName, setProjectName } = useEditor()
 
   const selectedCanvasPreset = useMemo(() => {
     const selected = CANVAS_SIZE_OPTIONS.find(
@@ -157,6 +166,27 @@ export function CanvasInspector({
           onValueChange={setOpenSections}
           className="min-w-0 rounded-none border-0"
         >
+          {projectId ? (
+            <Section
+              value="project"
+              title="Project"
+              icon={GalleryThumbnails}
+              onTriggerClick={(value) => {
+                if (sidebarState !== 'collapsed') return
+                setOpen(true)
+                setOpenSections([value])
+              }}
+            >
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Project name"
+                className="h-8 text-xs"
+                aria-label="Project name"
+              />
+            </Section>
+          ) : null}
+
           <Section
             value="canvas"
             title="Canvas"
@@ -313,7 +343,7 @@ export function CanvasInspector({
                         className="size-7"
                         onClick={() => setLibraryOpen(true)}
                       >
-                        <FolderOpen className="size-3.5" />
+                        <Folder className="size-3.5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Media library</TooltipContent>
@@ -341,6 +371,7 @@ export function CanvasInspector({
             <MediaInspector
               clips={clips}
               onAddMedia={() => mediaInputRef.current?.click()}
+              onDropFiles={addFiles}
               removeClip={removeClip}
               selectedClipId={selectedClipId}
               setSelectedClipId={setSelectedClipId}
@@ -351,6 +382,7 @@ export function CanvasInspector({
       <MediaLibraryDialog
         open={libraryOpen}
         onOpenChange={setLibraryOpen}
+        onAddMedia={() => mediaInputRef.current?.click()}
       />
     </div>
   )
