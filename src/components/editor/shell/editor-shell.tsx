@@ -35,7 +35,7 @@ export function EditorShell() {
           <span>
             Demo mode — changes won&rsquo;t be saved and rendering is disabled.{' '}
             <a
-              href="https://github.com/joeBlockchain/remotion-player-diy#self-hosting"
+              href="https://github.com/JoeBuildsStuff/remotion-player-diy#self-hosting"
               target="_blank"
               rel="noreferrer"
               className="underline underline-offset-2 hover:text-white/90"

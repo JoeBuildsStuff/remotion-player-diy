@@ -27,8 +27,9 @@ HTTP request ─► Node (Hono) on :3000
 The `main` branch publishes to GHCR as `ghcr.io/joebuildsstuff/remotion-player-diy:latest` (plus an immutable `sha-<commit>` tag).
 
 ```bash
-# 1. Pick two long random strings.
-export RENDER_SHARED_SECRET="$(openssl rand -hex 32)"
+# 1. Use the same render secret that was baked into the GHCR image by
+#    .github/workflows/publish-image.yml as VITE_RENDER_SHARED_SECRET.
+export RENDER_SHARED_SECRET="same-value-as-github-actions-VITE_RENDER_SHARED_SECRET"
 export CRON_SECRET="$(openssl rand -hex 32)"
 export PUBLIC_BASE_URL="http://localhost:3000"
 
@@ -39,7 +40,7 @@ docker compose up -d
 
 Open `http://localhost:3000`, import a clip, click Render. The MP4 will appear under the named volume `data` (`docker volume inspect <project>_data` to find the host path).
 
-> **Important:** `RENDER_SHARED_SECRET` at runtime must equal whatever `VITE_RENDER_SHARED_SECRET` the image was *built* with. The published GHCR image is built with the project's GitHub Actions secret. If you build your own image, pass `--build-arg VITE_RENDER_SHARED_SECRET=...` and use the same value at runtime.
+> **Important:** `RENDER_SHARED_SECRET` at runtime must equal whatever `VITE_RENDER_SHARED_SECRET` the image was *built* with. The published GHCR image is built with the project's GitHub Actions secret, so a newly generated local value will not work with that image. If you build your own image, pass `--build-arg VITE_RENDER_SHARED_SECRET=...` and use the same value at runtime.
 
 ## Building your own image
 
@@ -190,5 +191,7 @@ A typical homelab deployment can run the published GHCR image behind Traefik, wi
 - route your public hostname to the container internal port `3000`
 - mount persistent external Docker volumes for `/data/sources` and `/data/renders`
 - set `PUBLIC_BASE_URL` to your public origin
+
+In this repo's live setup, GitHub Actions publishes the image after `main` changes, and the Dell Optiplex deployment lets Watchtower pull that new `:latest` image from GHCR. The container keeps its persistent media on Docker volumes, so replacing the app image does not remove uploaded sources or rendered outputs.
 
 Anyone running their own homelab can copy that pattern from the published GHCR image.

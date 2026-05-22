@@ -12,6 +12,16 @@ Three deployment modes are supported. See [Deployment Modes](#deployment-modes) 
 - **Vercel with cloud rendering enabled.** Same Vercel project, but with `CLOUD_RENDER_ENABLED=true` plus the secrets below. Uses Vercel Blob + Vercel Sandbox + Vercel Cron.
 - **Self-hosted (Docker).** Single container, local filesystem storage, `@remotion/renderer` for rendering. See [docs/self-hosting.md](./docs/self-hosting.md) and the prebuilt image at `ghcr.io/joebuildsstuff/remotion-player-diy:latest`.
 
+## Current Deployment Topology
+
+This repo intentionally supports two different deployments from the same `main` branch:
+
+1. **Demo site on Vercel.** Vercel builds the Vite app with `VITE_DEPLOY_MODE=vercel`. For the public demo, cloud rendering stays disabled unless `CLOUD_RENDER_ENABLED=true` and the matching Vercel Blob/Sandbox/Cron secrets are configured.
+2. **Self-hosted image on GHCR.** `.github/workflows/publish-image.yml` builds the Docker image on every push to `main`, bakes in `VITE_DEPLOY_MODE=selfhost`, tags it as `ghcr.io/joebuildsstuff/remotion-player-diy:latest` and `sha-<commit>`, and pushes it to GitHub Container Registry.
+3. **Homelab update path.** The Dell Optiplex self-hosted deployment runs that GHCR image under Docker Compose. Watchtower can watch `ghcr.io/joebuildsstuff/remotion-player-diy:latest`, pull the newly published image, and recreate the container while keeping the mounted `/data` volume for uploaded sources and rendered MP4s.
+
+For the self-hosted image, `VITE_RENDER_SHARED_SECRET` is a **build-time** value baked into the browser bundle by GitHub Actions. The running container's `RENDER_SHARED_SECRET` must match that same value, otherwise `/api/upload`, `/api/sources`, `/api/projects`, and `/api/render` return `401`.
+
 ## Documentation
 
 Start with [docs/README.md](./docs/README.md) for app-level documentation:
