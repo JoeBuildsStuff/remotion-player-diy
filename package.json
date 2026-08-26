@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "server:build": "tsc -p server",
     "server:dev": "tsx watch server/index.ts",
-    "server:start": "node server-dist/server/index.js"
+    "server:start": "node server-dist/server/index.js",
+    "test": "tsx --test shared/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",

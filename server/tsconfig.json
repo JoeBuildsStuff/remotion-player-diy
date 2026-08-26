@@ -28,6 +28,7 @@
     "../dist",
     "../server-dist",
     "../remotion/Root.tsx",
-    "../remotion/index.ts"
+    "../remotion/index.ts",
+    "../shared/**/*.test.ts"
   ]
 }

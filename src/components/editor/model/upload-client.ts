@@ -119,9 +119,14 @@ async function uploadViaVercelBlob(
   secret: string,
   options?: { onProgress?: (progress: UploadProgress) => void },
 ): Promise<UploadResult> {
-  // Pathname under the Blob store. addRandomSuffix on the server prevents
-  // collisions, so we don't need to slugify aggressively here.
-  const pathname = `sources/${file.name}`
+  const meRes = await fetch('/api/me', {
+    headers: { 'x-render-secret': secret },
+  })
+  if (!meRes.ok) {
+    throw new Error(`Failed to resolve user (${meRes.status})`)
+  }
+  const me = (await meRes.json()) as { userId: string }
+  const pathname = `sources/users/${me.userId}/${file.name}`
 
   const result = await upload(pathname, file, {
     access: 'public',

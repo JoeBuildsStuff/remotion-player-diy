@@ -37,6 +37,12 @@ import {
   type Project,
   type ProjectSummary,
 } from '../../shared/project-schema.js'
+import {
+  parseUserScopedPathname,
+  renderPathname,
+  sourcePathname,
+  userDirName,
+} from '../../shared/tenant-path.js'
 
 export interface S3AdapterConfig {
   bucket: string
@@ -98,10 +104,8 @@ export class S3StorageAdapter implements StorageAdapter {
     await mkdir(this.cfg.tmpDir, { recursive: true })
   }
 
-  async listProjects(): Promise<ProjectSummary[]> {
-    const prefix = this.cfg.projectsPrefix.endsWith('/')
-      ? this.cfg.projectsPrefix
-      : `${this.cfg.projectsPrefix}/`
+  async listProjects(ownerUserId: string): Promise<ProjectSummary[]> {
+    const prefix = this.userProjectsPrefix(ownerUserId)
     const out: ProjectSummary[] = []
     let token: string | undefined
     do {
@@ -121,6 +125,7 @@ export class S3StorageAdapter implements StorageAdapter {
           const raw = await got.Body?.transformToString('utf-8')
           if (!raw) continue
           const parsed = ProjectSchema.parse(JSON.parse(raw))
+          if (parsed.ownerUserId && parsed.ownerUserId !== ownerUserId) continue
           out.push(summarize(parsed))
         } catch (err) {
           console.warn(`[storage] skipping unreadable project ${obj.Key}:`, err)
@@ -132,16 +137,18 @@ export class S3StorageAdapter implements StorageAdapter {
     return out
   }
 
-  async getProject(id: string): Promise<Project | null> {
+  async getProject(id: string, ownerUserId: string): Promise<Project | null> {
     if (!isSafeProjectId(id)) throw new Error(`Invalid project id: ${id}`)
-    const key = joinKey(this.cfg.projectsPrefix, `${id}.json`)
+    const key = this.projectKey(ownerUserId, id)
     try {
       const got = await this.client.send(
         new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
       )
       const raw = await got.Body?.transformToString('utf-8')
       if (!raw) return null
-      return ProjectSchema.parse(JSON.parse(raw))
+      const parsed = ProjectSchema.parse(JSON.parse(raw))
+      if (parsed.ownerUserId && parsed.ownerUserId !== ownerUserId) return null
+      return parsed
     } catch (err: unknown) {
       if (
         err &&
@@ -159,7 +166,10 @@ export class S3StorageAdapter implements StorageAdapter {
     if (!isSafeProjectId(project.id)) {
       throw new Error(`Invalid project id: ${project.id}`)
     }
-    const key = joinKey(this.cfg.projectsPrefix, `${project.id}.json`)
+    if (!project.ownerUserId) {
+      throw new Error('Project is missing ownerUserId')
+    }
+    const key = this.projectKey(project.ownerUserId, project.id)
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.cfg.bucket,
@@ -170,9 +180,9 @@ export class S3StorageAdapter implements StorageAdapter {
     )
   }
 
-  async deleteProject(id: string): Promise<void> {
+  async deleteProject(id: string, ownerUserId: string): Promise<void> {
     if (!isSafeProjectId(id)) throw new Error(`Invalid project id: ${id}`)
-    const key = joinKey(this.cfg.projectsPrefix, `${id}.json`)
+    const key = this.projectKey(ownerUserId, id)
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
     )
@@ -182,11 +192,11 @@ export class S3StorageAdapter implements StorageAdapter {
     name: string
     data: Buffer
     contentType?: string
+    ownerUserId: string
   }): Promise<StoredObject> {
     const safeName = input.name.replace(/[^\w.-]+/g, '_') || 'upload.bin'
-    const id = randomUUID()
-    const filename = `${id}-${safeName}`
-    const key = joinKey(this.cfg.sourcesPrefix, filename)
+    const filename = `${randomUUID()}-${safeName}`
+    const key = this.sourceKey(input.ownerUserId, filename)
     const contentType =
       input.contentType ?? CONTENT_TYPE_BY_EXT[path.extname(filename).toLowerCase()]
     await this.client.send(
@@ -199,19 +209,21 @@ export class S3StorageAdapter implements StorageAdapter {
     )
     return {
       url: await this.publicUrl(key, this.cfg.sourcesTtlDays),
-      pathname: `sources/${filename}`,
+      pathname: sourcePathname(input.ownerUserId, filename),
     }
   }
 
-  renderTempPath(renderId: string): string {
+  renderTempPath(renderId: string, _ownerUserId: string): string {
     return path.join(this.cfg.tmpDir, `${renderId}.mp4`)
   }
 
   async finalizeRender(
     localTempPath: string,
     renderId: string,
+    ownerUserId: string,
   ): Promise<StoredObject> {
-    const key = joinKey(this.cfg.rendersPrefix, `${renderId}.mp4`)
+    const filename = `${renderId}.mp4`
+    const key = this.renderKey(ownerUserId, filename)
     const body = await readFile(localTempPath)
     await this.client.send(
       new PutObjectCommand({
@@ -225,7 +237,7 @@ export class S3StorageAdapter implements StorageAdapter {
     await unlink(localTempPath).catch(() => {})
     return {
       url: await this.publicUrl(key, this.cfg.rendersTtlDays),
-      pathname: `renders/${renderId}.mp4`,
+      pathname: renderPathname(ownerUserId, filename),
     }
   }
 
@@ -237,10 +249,8 @@ export class S3StorageAdapter implements StorageAdapter {
     // No-op — URLs go straight to S3 / CDN.
   }
 
-  async listSources(): Promise<ListedSource[]> {
-    const prefix = this.cfg.sourcesPrefix.endsWith('/')
-      ? this.cfg.sourcesPrefix
-      : `${this.cfg.sourcesPrefix}/`
+  async listSources(ownerUserId: string): Promise<ListedSource[]> {
+    const prefix = this.userSourcesPrefix(ownerUserId)
     const out: ListedSource[] = []
     let token: string | undefined
     do {
@@ -254,14 +264,14 @@ export class S3StorageAdapter implements StorageAdapter {
       for (const obj of page.Contents ?? []) {
         if (!obj.Key) continue
         const filename = obj.Key.slice(prefix.length)
-        if (!filename) continue
+        if (!filename || filename.includes('/')) continue
         const displayName = filename.replace(
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i,
           '',
         )
         out.push({
           url: await this.publicUrl(obj.Key, this.cfg.sourcesTtlDays),
-          pathname: `sources/${filename}`,
+          pathname: sourcePathname(ownerUserId, filename),
           name: displayName || filename,
           size: obj.Size ?? 0,
           uploadedAt: obj.LastModified?.getTime() ?? 0,
@@ -274,12 +284,12 @@ export class S3StorageAdapter implements StorageAdapter {
     return out
   }
 
-  async deleteSource(pathname: string): Promise<void> {
-    const filename = pathname.replace(/^sources\//, '')
-    if (!filename || filename.includes('..')) {
+  async deleteSource(pathname: string, ownerUserId: string): Promise<void> {
+    const parsed = parseUserScopedPathname(pathname, 'sources')
+    if (!parsed || parsed.userId !== ownerUserId) {
       throw new Error(`Invalid source pathname: ${pathname}`)
     }
-    const key = joinKey(this.cfg.sourcesPrefix, filename)
+    const key = this.sourceKey(ownerUserId, parsed.filename)
     await this.client.send(
       new DeleteObjectsCommand({
         Bucket: this.cfg.bucket,
@@ -348,6 +358,29 @@ export class S3StorageAdapter implements StorageAdapter {
       this.client,
       new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
       { expiresIn },
+    )
+  }
+
+  private userSourcesPrefix(ownerUserId: string): string {
+    return `${joinKey(this.cfg.sourcesPrefix, `users/${userDirName(ownerUserId)}`)}/`
+  }
+
+  private userProjectsPrefix(ownerUserId: string): string {
+    return `${joinKey(this.cfg.projectsPrefix, `users/${userDirName(ownerUserId)}`)}/`
+  }
+
+  private sourceKey(ownerUserId: string, filename: string): string {
+    return joinKey(this.cfg.sourcesPrefix, `users/${userDirName(ownerUserId)}/${filename}`)
+  }
+
+  private renderKey(ownerUserId: string, filename: string): string {
+    return joinKey(this.cfg.rendersPrefix, `users/${userDirName(ownerUserId)}/${filename}`)
+  }
+
+  private projectKey(ownerUserId: string, projectId: string): string {
+    return joinKey(
+      this.cfg.projectsPrefix,
+      `users/${userDirName(ownerUserId)}/${projectId}.json`,
     )
   }
 }

@@ -1,33 +1,11 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 
-// Vercel auto-detects /api/*.ts and runs them as Node serverless functions.
-// This endpoint hands out short-lived tokens so the browser can upload
-// directly to Vercel Blob without streaming through our function.
-
-const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
-
-function unauthorized() {
-  return new Response('Unauthorized', { status: 401 })
-}
+import { requireCloudUser } from './_identity.js'
+import { parseUserScopedPathname } from '../shared/tenant-path.js'
 
 export async function POST(request: Request): Promise<Response> {
-  // Gated identically to /api/render — Blob upload tokens are useless without
-  // the render path, and we don't want anonymous Blob writes either.
-  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
-    return new Response(
-      'Cloud uploads are disabled on this deployment. See README "Deployment Modes".',
-      { status: 403 },
-    )
-  }
-  if (!SHARED_SECRET) {
-    return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
-      status: 500,
-    })
-  }
-
-  if (request.headers.get('x-render-secret') !== SHARED_SECRET) {
-    return unauthorized()
-  }
+  const auth = requireCloudUser(request)
+  if (auth instanceof Response) return auth
 
   const body = (await request.json()) as HandleUploadBody
 
@@ -36,17 +14,18 @@ export async function POST(request: Request): Promise<Response> {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        // Whitelist what kinds of files are allowed.
+        const scoped = parseUserScopedPathname(pathname, 'sources')
+        if (!scoped || scoped.userId !== auth.userId) {
+          throw new Error('Upload pathname is not owned by the current user')
+        }
         return {
           allowedContentTypes: [
             'video/*',
             'audio/*',
             'image/*',
           ],
-          // Source media uploaded by the editor goes under sources/.
-          // Render output goes under renders/ (written from the Sandbox, not here).
           addRandomSuffix: true,
-          tokenPayload: JSON.stringify({ pathname }),
+          tokenPayload: JSON.stringify({ pathname, ownerUserId: auth.userId }),
         }
       },
       onUploadCompleted: async () => {

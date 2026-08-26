@@ -28,6 +28,10 @@ services:
       # No trailing slash. Behind a reverse proxy this is the public URL.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
 
+      # Local/single-operator mode. Disable this (and set TRUST_PROXY_USER_ID)
+      # when a reverse proxy injects X-User-Id per authenticated user.
+      SINGLE_TENANT: ${SINGLE_TENANT:-true}
+
       # ─── Storage (optional) ──────────────────────────────────────────────
       # Default is local disk under /data. To swap in S3-compatible storage
       # (AWS S3, Cloudflare R2, MinIO, Backblaze B2, DO Spaces, Wasabi):

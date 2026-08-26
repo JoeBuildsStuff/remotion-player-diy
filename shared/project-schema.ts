@@ -30,6 +30,9 @@ export const ProjectSchema = z.object({
   volume: z.number().min(0).max(1),
   exportSettings: ExportSettingsSchema,
   clips: z.array(ProjectClipSchema),
+  // Stamped by the server from trusted request identity. Optional in the
+  // schema so pre-tenancy JSON still parses; save paths always set it.
+  ownerUserId: z.string().min(1).optional(),
 })
 
 export type Project = z.infer<typeof ProjectSchema>
@@ -50,6 +53,7 @@ export function makeEmptyProject(input: {
   id: string
   name?: string
   now?: number
+  ownerUserId: string
 }): Project {
   const now = input.now ?? Date.now()
   return {
@@ -67,6 +71,7 @@ export function makeEmptyProject(input: {
       resolutionScale: 100,
     },
     clips: [],
+    ownerUserId: input.ownerUserId,
   }
 }
 

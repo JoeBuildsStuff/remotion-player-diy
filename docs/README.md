@@ -9,6 +9,7 @@ This directory documents the app itself: what the editor is, how the current UI 
 - [Architecture](./architecture.md): how the React, Remotion, editor state, preview, timeline, and inspector pieces fit together.
 - [Development history](./development-history.md): the project story reconstructed from commit history.
 - [Current limitations](./current-limitations.md): visible UI and workflow gaps that are not fully implemented yet.
+- [Enhancements](./enhancements/per-user-content-isolation.md): per-user isolation of projects and media (implemented).
 
 ## Related Technical Docs
 

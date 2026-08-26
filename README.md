@@ -87,6 +87,7 @@ If you enable cloud rendering on a public deploy, also:
 - Set a [Vercel Spend Management](https://vercel.com/docs/spend-management) cap.
 - Consider [Vercel Deployment Protection](https://vercel.com/docs/deployment-protection) so only your accounts can hit the app at all.
 - Treat `VITE_RENDER_SHARED_SECRET` as a soft gate, not real auth — anything `VITE_*` is shipped to the browser bundle. Add real authentication before opening rendering to untrusted users.
+- Set `SINGLE_TENANT=true` unless a reverse proxy (or equivalent) injects a trusted `X-User-Id` and you set `TRUST_PROXY_USER_ID=true`. The shared secret is not a per-user identity; without one of those, list/upload/project APIs return 401.
 
 ## Environment Variables
 
@@ -115,6 +116,9 @@ Do not commit real secrets. The two render shared-secret values must match becau
 | `BLOB_READ_WRITE_TOKEN` | Server functions, snapshot script | Vercel Blob read/write token. Required to upload rendered videos, read/write Sandbox snapshot pointers, and clean up old Blob files. |
 | `CRON_SECRET` | `/api/cleanup` | Bearer token required by the cleanup endpoint so only Vercel Cron, or someone with the secret, can delete old Blob objects. |
 | `VITE_DEPLOY_MODE` | Browser client | `vercel` (default) or `selfhost`. Selfhost mode routes uploads to the Docker container's local server instead of Vercel Blob. |
+| `SINGLE_TENANT` | Server | Single-operator mode when there is no trusted `X-User-Id`. Required on Vercel unless `TRUST_PROXY_USER_ID=true`. |
+| `TRUST_PROXY_USER_ID` | Server | When `true`, tenant identity is `X-User-Id` from the reverse proxy. Do not enable unless the proxy overwrites that header. |
+| `DEFAULT_OWNER_USER_ID` | Server | Optional. Assigns pre-tenancy objects to this user during migration. |
 
 ## Vercel Deployment Notes
 

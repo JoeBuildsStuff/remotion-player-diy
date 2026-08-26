@@ -23,6 +23,16 @@ These controls are visible but not fully wired:
 
 Timeline zoom, split, delete selected item, seek, play/pause, jump to start/end, loop, and fullscreen playback are wired.
 
+## Multi-user isolation
+
+Projects, uploads, and renders are stored under `users/<userId>/`. Listing, open, delete, and `/media/*` reads are scoped to the authenticated user.
+
+- Self-host behind a reverse proxy: set `TRUST_PROXY_USER_ID=true` and forward `X-User-Id` (Traefik / SupaGate already does this).
+- Local-only or Vercel without proxy identity: set `SINGLE_TENANT=true`.
+- Unscoped files created before this change are moved to `DEFAULT_OWNER_USER_ID` (or the single-tenant id) on server start.
+
+Sharing a project with another user is not implemented.
+
 ## Project Persistence
 
 The editor state is currently in React state. There is no durable project save/load format wired to the Save button.

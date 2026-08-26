@@ -5,6 +5,7 @@ import {
   uploadToVercelBlob,
 } from '@remotion/vercel'
 import { waitUntil } from '@vercel/functions'
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
 import { COMP_NAME } from '../remotion/constants.js'
@@ -13,8 +14,7 @@ import { normalizeRenderScalePercent } from '../shared/render-scale.js'
 import { bundleRemotionProject, formatSSE, type RenderProgress } from './_render-helpers.js'
 import { restoreSnapshot } from './_restore-snapshot.js'
 import { SANDBOX_CREATING_TIMEOUT } from './sandbox-config.js'
-
-const SHARED_SECRET = process.env.RENDER_SHARED_SECRET
+import { requireCloudUser } from './_identity.js'
 
 const ExportSettingsSchema = z.object({
   quality: z.number().min(1).max(100),
@@ -41,27 +41,9 @@ function qualityToCrf(quality: number) {
   return Math.round(36 - quality * 0.18)
 }
 
-function unauthorized() {
-  return new Response('Unauthorized', { status: 401 })
-}
-
 export async function POST(request: Request): Promise<Response> {
-  // Public OSS demo deploys leave CLOUD_RENDER_ENABLED unset so visitors can't
-  // burn Sandbox/Blob quota. Self-hosters opt in by setting it to "true".
-  if (process.env.CLOUD_RENDER_ENABLED !== 'true') {
-    return new Response(
-      'Cloud rendering is disabled on this deployment. See README "Deployment Modes" to enable it on your own deploy or self-host with Docker.',
-      { status: 403 },
-    )
-  }
-  if (!SHARED_SECRET) {
-    return new Response('Server misconfigured: RENDER_SHARED_SECRET not set', {
-      status: 500,
-    })
-  }
-  if (request.headers.get('x-render-secret') !== SHARED_SECRET) {
-    return unauthorized()
-  }
+  const auth = requireCloudUser(request)
+  if (auth instanceof Response) return auth
 
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN
   if (!blobToken) {
@@ -197,6 +179,7 @@ export async function POST(request: Request): Promise<Response> {
           contentType,
           blobToken,
           access: 'public',
+          blobPath: `renders/users/${auth.userId}/${randomUUID()}.mp4`,
         })
 
         await send({ type: 'done', url, size })

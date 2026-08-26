@@ -36,6 +36,11 @@ import {
 import { normalizeRenderScalePercent } from '../shared/render-scale.js'
 import type { RenderProgress } from '../shared/sse.js'
 import { createStorageAdapter, type StorageAdapter } from './storage/index.js'
+import {
+  resolveRequestUserId,
+  userResponse,
+} from '../shared/identity.js'
+import { pathnameOwnedBy } from '../shared/tenant-path.js'
 
 const PORT = Number(process.env.PORT ?? 3000)
 const DIST_DIR = process.env.DIST_DIR ?? path.resolve('dist')
@@ -97,6 +102,14 @@ function requireSecret(req: Request) {
   return null
 }
 
+function requireUser(req: Request): { userId: string } | Response {
+  const denied = requireSecret(req)
+  if (denied) return denied
+  const identity = resolveRequestUserId(req.headers)
+  if (!identity.ok) return userResponse(identity)
+  return { userId: identity.userId }
+}
+
 // Bundle the Remotion project once at first render and cache. This trades
 // memory for warmer starts on subsequent renders. Set DISABLE_BUNDLE_CACHE=true
 // to force a re-bundle on every request (useful when iterating on /remotion
@@ -113,13 +126,18 @@ async function getBundle(): Promise<string> {
   return cachedBundle
 }
 
-// ─── /api/upload ──────────────────────────────────────────────────────────
+app.get('/api/me', (c) => {
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
+  return c.json({ userId: auth.userId })
+})
+
 // Client sends the File in a multipart POST; the adapter persists it and
 // returns a public URL the editor can render the clip from.
 
 app.post('/api/upload', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
 
   let form: FormData
   try {
@@ -140,6 +158,7 @@ app.post('/api/upload', async (c) => {
     name: file.name,
     data: Buffer.from(await file.arrayBuffer()),
     contentType: file.type || undefined,
+    ownerUserId: auth.userId,
   })
 
   return c.json({ url: stored.url, pathname: stored.pathname })
@@ -150,25 +169,25 @@ app.post('/api/upload', async (c) => {
 // can show a "Previous Uploads" panel and re-attach a clip without re-uploading.
 
 app.get('/api/sources', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
-  return c.json({ sources: await storage.listSources() })
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
+  return c.json({ sources: await storage.listSources(auth.userId) })
 })
 
 app.delete('/api/sources', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
   let body: { pathname?: unknown }
   try {
     body = (await c.req.json()) as { pathname?: unknown }
   } catch {
     return c.text('Invalid JSON body', 400)
   }
-  if (typeof body.pathname !== 'string' || !body.pathname.startsWith('sources/')) {
+  if (typeof body.pathname !== 'string' || !pathnameOwnedBy(body.pathname, auth.userId, 'sources')) {
     return c.text('Missing or invalid pathname', 400)
   }
   try {
-    await storage.deleteSource(body.pathname)
+    await storage.deleteSource(body.pathname, auth.userId)
   } catch (err) {
     return c.text(err instanceof Error ? err.message : 'Delete failed', 400)
   }
@@ -182,14 +201,14 @@ app.delete('/api/sources', async (c) => {
 // delete its media.
 
 app.get('/api/projects', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
-  return c.json({ projects: await storage.listProjects() })
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
+  return c.json({ projects: await storage.listProjects(auth.userId) })
 })
 
 app.post('/api/projects', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
   let name: string | undefined
   try {
     const body = (await c.req.json().catch(() => ({}))) as { name?: unknown }
@@ -202,22 +221,23 @@ app.post('/api/projects', async (c) => {
   const project = makeEmptyProject({
     id: randomUUID(),
     name: name ?? DEFAULT_PROJECT_NAME,
+    ownerUserId: auth.userId,
   })
   await storage.saveProject(project)
   return c.json(project)
 })
 
 app.get('/api/projects/:id', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
-  const project = await storage.getProject(c.req.param('id'))
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
+  const project = await storage.getProject(c.req.param('id'), auth.userId)
   if (!project) return c.text('Not found', 404)
   return c.json(project)
 })
 
 app.put('/api/projects/:id', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
   const id = c.req.param('id')
   let body: unknown
   try {
@@ -232,15 +252,23 @@ app.put('/api/projects/:id', async (c) => {
   if (parsed.data.id !== id) {
     return c.text('Project id in body does not match URL', 400)
   }
-  const next = { ...parsed.data, updatedAt: Date.now() }
+  const existing = await storage.getProject(id, auth.userId)
+  if (!existing) return c.text('Not found', 404)
+  const next = {
+    ...parsed.data,
+    updatedAt: Date.now(),
+    ownerUserId: auth.userId,
+  }
   await storage.saveProject(next)
   return c.json(next)
 })
 
 app.delete('/api/projects/:id', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
-  await storage.deleteProject(c.req.param('id'))
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
+  const existing = await storage.getProject(c.req.param('id'), auth.userId)
+  if (!existing) return c.text('Not found', 404)
+  await storage.deleteProject(c.req.param('id'), auth.userId)
   return new Response(null, { status: 204 })
 })
 
@@ -269,8 +297,8 @@ function qualityToCrf(quality: number) {
 }
 
 app.post('/api/render', async (c) => {
-  const denied = requireSecret(c.req.raw)
-  if (denied) return denied
+  const auth = requireUser(c.req.raw)
+  if (auth instanceof Response) return auth
 
   let body: z.infer<typeof RenderRequestSchema>
   try {
@@ -316,7 +344,7 @@ app.post('/api/render', async (c) => {
       })
 
       const renderId = randomUUID()
-      tempPath = storage.renderTempPath(renderId)
+      tempPath = storage.renderTempPath(renderId, auth.userId)
 
       await send({
         type: 'phase',
@@ -374,7 +402,7 @@ app.post('/api/render', async (c) => {
       }
 
       const stats = await stat(tempPath)
-      const stored = await storage.finalizeRender(tempPath, renderId)
+      const stored = await storage.finalizeRender(tempPath, renderId, auth.userId)
       await send({ type: 'done', url: stored.url, size: stats.size })
     } catch (err) {
       console.error('[render] failed:', err)
@@ -448,7 +476,8 @@ app.notFound(async () => {
 serve({ fetch: app.fetch, port: PORT })
 console.log(
   `[server] listening on :${PORT}  storage=${storage.kind}  dist=${DIST_DIR}  base=${PUBLIC_BASE_URL}  ` +
-    `ttl=renders:${RENDERS_TTL_DAYS}d/sources:${SOURCES_TTL_DAYS}d`,
+    `ttl=renders:${RENDERS_TTL_DAYS}d/sources:${SOURCES_TTL_DAYS}d  ` +
+    `identity=${process.env.TRUST_PROXY_USER_ID === 'true' ? 'proxy-x-user-id' : process.env.SINGLE_TENANT === 'true' ? 'single-tenant' : 'required'}`,
 )
 
 function numberFromEnv(name: string, fallback: number): number {

@@ -65,6 +65,10 @@ Then in `docker-compose.yml`, replace `image:` with `build: .` (the example file
 | `SOURCES_DIR` | no, default `${DATA_DIR}/sources` | Override just the sources path — useful when you want bulk storage for uploads and SSD for renders. |
 | `RENDERS_DIR` | no, default `${DATA_DIR}/renders` | Override just the renders path. |
 | `DISABLE_BUNDLE_CACHE` | no | Set to `true` to re-bundle the Remotion project on every render (debugging only). |
+| `TRUST_PROXY_USER_ID` | no | Set to `true` to treat `X-User-Id` from the reverse proxy as the tenant. Required for multi-user self-host. |
+| `SINGLE_TENANT` | no | Set to `true` for local-only / single-operator deploys with no proxy identity. |
+| `SINGLE_TENANT_USER_ID` | no, default `local` | Tenant id used when `SINGLE_TENANT=true`. |
+| `DEFAULT_OWNER_USER_ID` | no | One-time owner for migrating unscoped files into `users/<id>/`. |
 
 ### Retention
 
@@ -134,17 +138,41 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
 
 **Backups.** Back up the `/data` volume. Nothing else is stateful.
 
-## Security: `/media/*` reads
+## Security: tenancy and `/media/*` reads
 
-By default, uploaded source media and rendered output are served unauthenticated at `/media/sources/<id>` and `/media/renders/<id>`. The shared-secret gate only protects the *write* paths (`/api/upload`, `/api/render`). Reads rely on UUIDv4 (~122 bits of entropy) for unguessability — the same security model as a Vercel Blob with `addRandomSuffix`.
+Host-level login (Traefik / SupaGate / Cloudflare Access) only answers “is this person allowed to use the hostname?” It does not isolate files. This app isolates **projects, uploads, and renders per user**.
 
-This is a deliberate trade-off: browser `<video>` elements can't attach a custom auth header to source-clip preview requests, so gating `/media/*` with `x-render-secret` would break the editor's preview.
+### How identity is resolved
 
-Three ways to harden this:
+| Mode | Env | User id |
+| --- | --- | --- |
+| Reverse-proxy tenancy | `TRUST_PROXY_USER_ID=true` | `X-User-Id` from the proxy (SupaGate / Traefik `authResponseHeaders`). Never taken from the request body. |
+| Single-operator | `SINGLE_TENANT=true` | `SINGLE_TENANT_USER_ID` or `local` |
+| Neither | — | `/api/*` list/write routes return **401** |
 
-1. **Signed URLs.** Set `MEDIA_URL_SIGNING_SECRET` to any long random string. The server then issues `?exp=…&sig=…` URLs and refuses unsigned `/media/*` requests. The signature travels in the query string so `<video>` elements still work. Expiry tracks the TTL.
-2. **Reverse-proxy auth.** Put the whole hostname behind Traefik basic-auth, Authelia, Authentik, or Cloudflare Access. Covers the SPA, API, and `/media` in one place.
-3. **S3 with presigned URLs.** Switch storage to `STORAGE_BACKEND=s3` against a private bucket. The editor receives short-lived presigned GetObject URLs.
+The shared secret (`x-render-secret`) is still required on `/api/*` writes. It is baked into the browser bundle, so it is **not** a tenant. `/api/cleanup` stays an operator job (bearer `CRON_SECRET`) and scans the whole store without returning other people’s files as a user-facing list.
+
+Objects are stored under `users/<userId>/`:
+
+```
+/data/sources/users/<userId>/…
+/data/renders/users/<userId>/…
+/data/projects/users/<userId>/<id>.json
+```
+
+`GET /api/projects` and `GET /api/sources` only return that user’s objects. `GET` / `PUT` / `DELETE` of another user’s project id returns **404**. `/media/sources/*` and `/media/renders/*` refuse bytes whose path user id does not match the request user, even when the URL is signed. Browser `<video>` elements cannot send `x-render-secret`; identity for media reads comes from the proxy header or single-tenant mode, plus optional signed-URL query params.
+
+### Migrating existing flat files
+
+If the data directory still has unscoped files (the pre-tenancy layout), set `DEFAULT_OWNER_USER_ID` to the operator’s user id (or use `SINGLE_TENANT=true`). On startup the server moves those files into `users/<id>/` and rewrites `remoteSrc` in saved projects. Changing path prefixes invalidates old media URLs the same way rotating `MEDIA_URL_SIGNING_SECRET` does.
+
+### Extra hardening
+
+1. **Signed URLs.** Set `MEDIA_URL_SIGNING_SECRET`. The server issues `?exp=…&sig=…` URLs. A valid signature is not enough to read another user’s object.
+2. **Reverse-proxy auth.** Required for `TRUST_PROXY_USER_ID`. Covers the SPA, API, and `/media`.
+3. **S3 with presigned URLs.** Listing is still per-user; the bucket/CDN is responsible for byte access of the returned URL.
+
+On Vercel, Blob objects use the same `users/<userId>/` key prefix for list/upload/delete. Public Blob URLs remain fetchable if leaked — prefer `SINGLE_TENANT=true` or real proxy identity, and do not treat UUID paths as tenancy.
 
 ## Common deploy gotchas
 
@@ -166,6 +194,7 @@ Set in `.env.local` (you already need matching `RENDER_SHARED_SECRET` / `VITE_RE
 ```bash
 VITE_DEPLOY_MODE=selfhost
 PUBLIC_BASE_URL=http://localhost:5173
+SINGLE_TENANT=true
 ```
 
 Then run both processes:
@@ -178,7 +207,7 @@ pnpm dev
 pnpm server:dev
 ```
 
-Open `http://localhost:5173`. In the inspector **Media** section, use the folder icon to open the media library. Upload at least one clip via **Add media** so `/api/sources` has entries under `./data/sources/`.
+Open `http://localhost:5173`. In the inspector **Media** section, use the folder icon to open the media library. Upload at least one clip via **Add media** so `/api/sources` has entries under `./data/sources/users/<id>/`.
 
 Vite runs on `:5173`, the server on `:3000`. `vite.config.ts` already proxies `/api` and `/media` to the Node server; you can also hit `:3000` directly after `pnpm build` (it serves `dist/`).
 
