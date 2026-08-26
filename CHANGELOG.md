@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.8.0...v1.9.0) (2026-08-26)
+
+
+### Features
+
+* implement multi-user content isolation and enhance project management ([835ac70](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/835ac70d156fb21e5f84eeb935074b8b3bd8a88c))
+
 # [1.8.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.7.0...v1.8.0) (2026-05-22)
 
 
