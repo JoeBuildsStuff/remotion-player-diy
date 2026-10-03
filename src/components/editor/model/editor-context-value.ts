@@ -30,7 +30,9 @@ export type EditorState = {
   playerRef: React.RefObject<PlayerRef | null>
   fullscreenElementRef: React.RefObject<HTMLDivElement | null>
   selectedClipId: string | null
+  selectedTrackIndex: number | null
   setSelectedClipId: (id: string | null) => void
+  setSelectedTrackIndex: (index: number | null) => void
   setVolume: (v: number) => void
   setExportSettings: (settings: ExportSettings) => void
   setWidth: (v: number) => void
@@ -62,6 +64,10 @@ export type EditorState = {
   addTextClip: () => void
   updateClip: (id: string, patch: Partial<Clip>) => void
   removeClip: (id: string) => void
+  duplicateClip: (
+    sourceId: string,
+    placement: { trackIndex: number; startFrame?: number },
+  ) => void
   splitClip: (id: string, frame: number) => void
   seekTo: (frame: number) => void
   play: () => void

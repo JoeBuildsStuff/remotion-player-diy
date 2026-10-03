@@ -9,6 +9,10 @@ import {
 } from '@dnd-kit/core'
 
 import { useEditor } from '../model/editor-context-value'
+import {
+  EDITOR_CLIP_DRAG_TYPE,
+  isEditorClipDrag,
+} from '../model/clip-clipboard'
 import { hasExternalFiles } from '../media/use-media-file-drop'
 import { timelineClipColorClass } from '../model/clip-colors'
 import type { Clip } from '../model/editor-types'
@@ -47,9 +51,12 @@ export function Timeline() {
     currentFrame,
     seekTo,
     selectedClipId,
+    selectedTrackIndex,
     setSelectedClipId,
+    setSelectedTrackIndex,
     setCurrentFrame,
     addFiles,
+    duplicateClip,
     removeClip,
     updateClip,
   } = useEditor()
@@ -66,7 +73,12 @@ export function Timeline() {
     tooltipX: number
     tooltipY: number
   } | null>(null)
-  const [isExternalDragging, setExternalDragging] = useState(false)
+  const [externalDrag, setExternalDrag] = useState<'file' | 'clip' | null>(
+    null,
+  )
+  const [clipDropTrackIndex, setClipDropTrackIndex] = useState<number | null>(
+    null,
+  )
   const [dragTrackIndexes, setDragTrackIndexes] = useState<number[] | null>(
     null,
   )
@@ -131,6 +143,7 @@ export function Timeline() {
 
   const handleSeek = (e: React.MouseEvent) => {
     if (playheadDragRef.current) return
+    setSelectedTrackIndex(trackIndexFromClientY(e.clientY))
     seekFrame(frameFromClientX(e.clientX))
   }
 
@@ -163,23 +176,43 @@ export function Timeline() {
     endTimelineInteraction()
   }
 
+  const clearExternalDrag = () => {
+    setExternalDrag(null)
+    setClipDropTrackIndex(null)
+  }
+
   const handleExternalDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!hasExternalFiles(e.dataTransfer)) return
+    const isClip = isEditorClipDrag(e.dataTransfer)
+    const isFile = hasExternalFiles(e.dataTransfer)
+    if (!isClip && !isFile) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
-    setExternalDragging(true)
+    setExternalDrag(isClip ? 'clip' : 'file')
+    setClipDropTrackIndex(isClip ? trackIndexFromClientY(e.clientY) : null)
   }
 
   const handleExternalDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-      setExternalDragging(false)
+      clearExternalDrag()
     }
   }
 
   const handleExternalDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.files.length) return
+    const clipId = e.dataTransfer.getData(EDITOR_CLIP_DRAG_TYPE)
+    if (clipId) {
+      e.preventDefault()
+      const trackIndex = trackIndexFromClientY(e.clientY)
+      clearExternalDrag()
+      duplicateClip(clipId, { trackIndex })
+      return
+    }
+
+    if (!e.dataTransfer.files.length) {
+      clearExternalDrag()
+      return
+    }
     e.preventDefault()
-    setExternalDragging(false)
+    clearExternalDrag()
     const startFrame = frameFromClientX(e.clientX)
     const trackIndex = trackIndexFromClientY(e.clientY)
     void addFiles(e.dataTransfer.files, { startFrame, trackIndex })
@@ -314,6 +347,10 @@ export function Timeline() {
   }
 
   const tickCount = Math.max(1, Math.ceil(totalSeconds))
+  const showExternalDropOverlay =
+    externalDrag === 'file' ||
+    (externalDrag === 'clip' &&
+      !timelineTracks.some((track) => track.index === clipDropTrackIndex))
 
   return (
     <div
@@ -365,7 +402,12 @@ export function Timeline() {
 
             <div className="relative">
               {timelineTracks.map((track) => (
-                <TimelineTrack key={track.index} trackIndex={track.index}>
+                <TimelineTrack
+                  key={track.index}
+                  trackIndex={track.index}
+                  isSelected={selectedTrackIndex === track.index}
+                  isDropTarget={clipDropTrackIndex === track.index}
+                >
                   {clips
                     .filter((c) => c.trackIndex === track.index)
                     .map((clip) => {
@@ -423,7 +465,7 @@ export function Timeline() {
                 onPointerCancel={endPlayheadDrag}
               />
             </div>
-            {isExternalDragging ? (
+            {showExternalDropOverlay ? (
               <div className="pointer-events-none absolute inset-0 z-20 border-2 border-dashed border-editor-selection bg-secondary/30" />
             ) : null}
           </div>

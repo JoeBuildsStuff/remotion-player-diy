@@ -19,7 +19,10 @@ import {
 import { cn } from '@/lib/utils'
 
 import { AudioWaveform } from '../media/audio-waveform'
+import { EDITOR_CLIP_DRAG_TYPE } from '../model/clip-clipboard'
+import { FPS } from '../model/editor-constants'
 import type { Clip } from '../model/editor-types'
+import { timelineTrackLabel } from '../timeline/timeline-geometry'
 
 type MediaInspectorProps = {
   clips: Clip[]
@@ -34,6 +37,16 @@ function isPreviewableClip(clip: Clip) {
   return Boolean(clip.src) && (clip.type === 'audio' || clip.type === 'video')
 }
 
+function formatMediaTime(frame: number, fps: number) {
+  const totalSeconds = frame / fps
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = Math.floor(totalSeconds % 60)
+  const centiseconds = Math.floor((totalSeconds * 100) % 100)
+  const clock = `${minutes}:${String(seconds).padStart(2, '0')}`
+  if (centiseconds === 0) return clock
+  return `${clock}.${String(centiseconds).padStart(2, '0')}`
+}
+
 function ClipThumbnail({ clip }: { clip: Clip }) {
   return (
     <span className="relative h-10 w-14 shrink-0 overflow-hidden rounded bg-secondary/70">
@@ -42,6 +55,7 @@ function ClipThumbnail({ clip }: { clip: Clip }) {
           src={clip.src}
           alt={clip.name}
           loading="lazy"
+          draggable={false}
           className="h-full w-full object-cover"
         />
       ) : null}
@@ -50,6 +64,7 @@ function ClipThumbnail({ clip }: { clip: Clip }) {
           src={clip.src}
           muted
           preload="metadata"
+          draggable={false}
           className="h-full w-full object-cover"
         />
       ) : null}
@@ -106,6 +121,7 @@ export function MediaInspector({
 }: MediaInspectorProps) {
   const [previewingClipId, setPreviewingClipId] = useState<string | null>(null)
   const previewMediaRef = useRef<HTMLMediaElement | null>(null)
+  const suppressClickRef = useRef(false)
 
   const stopPreview = () => {
     const media = previewMediaRef.current
@@ -168,6 +184,8 @@ export function MediaInspector({
           {clips.map((clip) => {
             const isSelected = selectedClipId === clip.id
             const isPreviewing = previewingClipId === clip.id
+            const trackLabel = timelineTrackLabel(clips, clip.trackIndex)
+            const rangeLabel = `${formatMediaTime(clip.startFrame, FPS)}–${formatMediaTime(clip.startFrame + clip.durationInFrames, FPS)}`
 
             return (
               <li
@@ -179,10 +197,23 @@ export function MediaInspector({
               >
                 <button
                   type="button"
-                  className="flex w-full min-w-0 items-center gap-2 rounded-sm pr-12 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                  title={`${clip.name} (${clip.type})`}
+                  draggable
+                  className="flex w-full min-w-0 cursor-grab items-start gap-2 rounded-sm pr-12 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 active:cursor-grabbing"
+                  title={`${clip.name} (${clip.type}) · Track ${trackLabel} · ${rangeLabel}`}
                   aria-pressed={isSelected}
-                  onClick={() => setSelectedClipId(clip.id)}
+                  onDragStart={(event) => {
+                    suppressClickRef.current = true
+                    event.dataTransfer.effectAllowed = 'copy'
+                    event.dataTransfer.setData(EDITOR_CLIP_DRAG_TYPE, clip.id)
+                    event.dataTransfer.setData('text/plain', clip.name)
+                  }}
+                  onClick={() => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false
+                      return
+                    }
+                    setSelectedClipId(clip.id)
+                  }}
                 >
                   <ClipThumbnail clip={clip} />
                   <span className="min-w-0 flex-1">
@@ -191,6 +222,9 @@ export function MediaInspector({
                     </span>
                     <span className="block capitalize text-muted-foreground">
                       {clip.type}
+                    </span>
+                    <span className="block truncate text-[10px] leading-4 text-muted-foreground/80 tabular-nums">
+                      Track {trackLabel} · {rangeLabel}
                     </span>
                   </span>
                 </button>

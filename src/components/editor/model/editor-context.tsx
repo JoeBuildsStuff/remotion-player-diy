@@ -9,6 +9,7 @@ import {
   type Project,
 } from '../../../../shared/project-schema'
 
+import { clipCopyAt, pasteTrackIndex } from './clip-clipboard'
 import { createMediaClip, createTextClip } from './clip-factory'
 import {
   FPS,
@@ -71,7 +72,24 @@ export function EditorProvider({
   const [timelineZoom, setTimelineZoom] = useState(1)
   const [previewZoom, setPreviewZoom] = useState(1)
   const [showCanvasRulers, setShowCanvasRulers] = useState(false)
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
+  const [selectedClipId, setSelectedClipIdState] = useState<string | null>(null)
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState<number | null>(
+    null,
+  )
+  const clipsRef = useRef(clips)
+  const selectedClipIdRef = useRef(selectedClipId)
+  const selectedTrackIndexRef = useRef(selectedTrackIndex)
+  const clipboardRef = useRef<Clip | null>(null)
+  clipsRef.current = clips
+  selectedClipIdRef.current = selectedClipId
+  selectedTrackIndexRef.current = selectedTrackIndex
+
+  const setSelectedClipId = useCallback((id: string | null) => {
+    setSelectedClipIdState(id)
+    if (!id) return
+    const clip = clipsRef.current.find((item) => item.id === id)
+    if (clip) setSelectedTrackIndex(clip.trackIndex)
+  }, [])
 
   const durationInFrames = useMemo(
     () => durationInFramesFor(clips, FPS),
@@ -210,15 +228,20 @@ export function EditorProvider({
 
   const addTextClip = useCallback(() => {
     const id = crypto.randomUUID()
+    const clip = createTextClip(id, clipsRef.current, width, height)
 
-    setClips((prev) => [...prev, createTextClip(id, prev, width, height)])
-    setSelectedClipId(id)
+    setClips((prev) => (prev.some((item) => item.id === id) ? prev : [...prev, clip]))
+    setSelectedClipIdState(id)
+    setSelectedTrackIndex(clip.trackIndex)
   }, [height, width])
 
   const updateClip = useCallback((id: string, patch: Partial<Clip>) => {
     setClips((prev) =>
       prev.map((clip) => (clip.id === id ? { ...clip, ...patch } : clip)),
     )
+    if (patch.trackIndex != null && selectedClipIdRef.current === id) {
+      setSelectedTrackIndex(patch.trackIndex)
+    }
   }, [])
 
   const splitClip = useCallback((id: string, frame: number) => {
@@ -256,33 +279,85 @@ export function EditorProvider({
 
   const removeClip = useCallback((id: string) => {
     setClips((prev) => prev.filter((c) => c.id !== id))
-    setSelectedClipId((prev) => (prev === id ? null : prev))
+    setSelectedClipIdState((prev) => (prev === id ? null : prev))
   }, [])
+
+  const appendClipCopy = useCallback(
+    (source: Clip, placement: { trackIndex: number; startFrame?: number }) => {
+      const id = crypto.randomUUID()
+      setClips((prev) => {
+        if (prev.some((clip) => clip.id === id)) return prev
+        return [...prev, clipCopyAt(source, prev, placement, id)]
+      })
+      setSelectedClipIdState(id)
+      setSelectedTrackIndex(placement.trackIndex)
+    },
+    [],
+  )
+
+  const duplicateClip = useCallback(
+    (
+      sourceId: string,
+      placement: { trackIndex: number; startFrame?: number },
+    ) => {
+      const source = clipsRef.current.find((clip) => clip.id === sourceId)
+      if (!source) return
+      appendClipCopy(source, placement)
+    },
+    [appendClipCopy],
+  )
+
+  const copySelectedClip = useCallback(() => {
+    const id = selectedClipIdRef.current
+    if (!id) return false
+    const clip = clipsRef.current.find((item) => item.id === id)
+    if (!clip) return false
+    clipboardRef.current = { ...clip }
+    return true
+  }, [])
+
+  const pasteClipboard = useCallback(() => {
+    const source = clipboardRef.current
+    if (!source) return false
+    const trackIndex = pasteTrackIndex(
+      clipsRef.current,
+      selectedClipIdRef.current,
+      selectedTrackIndexRef.current,
+      source.trackIndex,
+    )
+    appendClipCopy(source, { trackIndex })
+    return true
+  }, [appendClipCopy])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTextEntryTarget(event.target)) return
 
-      const target = event.target
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
-      ) {
+      const shortcut = event.metaKey || event.ctrlKey
+      const key = event.key.toLowerCase()
+      if (shortcut && !event.altKey && !event.shiftKey && (key === 'c' || key === 'v')) {
+        if (key === 'c') {
+          if (!copySelectedClip()) return
+        } else if (!pasteClipboard()) {
+          return
+        }
+        event.preventDefault()
         return
       }
 
-      if (!selectedClipId) return
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      if (shortcut || event.altKey) return
+
+      const id = selectedClipIdRef.current
+      if (!id) return
 
       event.preventDefault()
-      removeClip(selectedClipId)
+      removeClip(id)
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [removeClip, selectedClipId])
+  }, [copySelectedClip, pasteClipboard, removeClip])
 
   const seekTo = useCallback((frame: number) => {
     playerRef.current?.seekTo(frame)
@@ -409,7 +484,9 @@ export function EditorProvider({
       playerRef,
       fullscreenElementRef,
       selectedClipId,
+      selectedTrackIndex,
       setSelectedClipId,
+      setSelectedTrackIndex,
       setVolume,
       setExportSettings,
       setWidth,
@@ -433,6 +510,7 @@ export function EditorProvider({
       addTextClip,
       updateClip,
       removeClip,
+      duplicateClip,
       splitClip,
       seekTo,
       play,
@@ -455,11 +533,14 @@ export function EditorProvider({
       pause,
       play,
       previewZoom,
+      duplicateClip,
       removeClip,
       resetPreviewZoom,
       resetTimelineZoom,
       seekTo,
       selectedClipId,
+      selectedTrackIndex,
+      setSelectedClipId,
       showCanvasRulers,
       splitClip,
       timelineZoom,
@@ -481,5 +562,14 @@ export function EditorProvider({
 
   return (
     <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
+  )
+}
+
+function isTextEntryTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
   )
 }

@@ -81,6 +81,13 @@ export function timelineTracksFor(
     .map((index) => ({ index }))
 }
 
+export function timelineTrackLabel(clips: Clip[], trackIndex: number) {
+  const tracks = timelineTracksFor(clips)
+  const rowIndex = tracks.findIndex((track) => track.index === trackIndex)
+  if (rowIndex === -1) return 1
+  return tracks.length - rowIndex
+}
+
 export function dragTrackIndexesFor(tracks: TimelineTrackModel[]) {
   if (tracks.length === 0) return [0]
 
