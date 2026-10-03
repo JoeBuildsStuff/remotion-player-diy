@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.10.0...v1.11.0) (2026-10-03)
+
+
+### Features
+
+* duplicate clips from the timeline and media list ([da2be27](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/da2be27e6006fdc63f56678463c6f17ec71db0de))
+
 # [1.10.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.9.0...v1.10.0) (2026-10-03)
 
 
