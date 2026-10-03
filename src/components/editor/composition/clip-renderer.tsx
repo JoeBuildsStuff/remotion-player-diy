@@ -55,12 +55,7 @@ function textContainerStyle(clip: Clip, opacity: number): CSSProperties {
     transformOrigin: 'center',
     display: 'flex',
     alignItems: 'center',
-    justifyContent:
-      clip.textAlign === 'left'
-        ? 'flex-start'
-        : clip.textAlign === 'right'
-          ? 'flex-end'
-          : 'center',
+    justifyContent: clipTextAlignJustify(clip),
     paddingInline: clip.backgroundPaddingX ?? 0,
     borderRadius: clip.backgroundBorderRadius ?? 0,
     backgroundColor: clip.backgroundColor ?? 'transparent',
@@ -89,6 +84,16 @@ function textStyle(clip: Clip): CSSProperties {
   }
 }
 
+export function clipTextStyle(clip: Clip): CSSProperties {
+  return textStyle(clip)
+}
+
+export function clipTextAlignJustify(clip: Clip): CSSProperties['justifyContent'] {
+  if (clip.textAlign === 'left') return 'flex-start'
+  if (clip.textAlign === 'right') return 'flex-end'
+  return 'center'
+}
+
 function croppedMediaStyle(clip: Clip): CSSProperties {
   return {
     position: 'absolute',
@@ -102,7 +107,13 @@ function croppedMediaStyle(clip: Clip): CSSProperties {
   }
 }
 
-export function ClipRenderer({ clip }: { clip: Clip }) {
+export function ClipRenderer({
+  clip,
+  hideText = false,
+}: {
+  clip: Clip
+  hideText?: boolean
+}) {
   const frame = useCurrentFrame()
   const visualFade = fadeFactor(
     frame,
@@ -146,7 +157,9 @@ export function ClipRenderer({ clip }: { clip: Clip }) {
   if (clip.type === 'text') {
     return (
       <div style={textContainerStyle(clip, clip.opacity * visualFade)}>
-        <div style={textStyle(clip)}>{clip.text ?? 'Text'}</div>
+        {hideText ? null : (
+          <div style={textStyle(clip)}>{clip.text ?? 'Text'}</div>
+        )}
       </div>
     )
   }

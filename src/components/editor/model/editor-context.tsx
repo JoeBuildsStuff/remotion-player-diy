@@ -3,7 +3,11 @@ import type { PlayerRef } from '@remotion/player'
 
 import { uploadSourceFile } from './upload-client'
 import { saveProject } from '@/lib/project-client'
-import { DEFAULT_PROJECT_NAME, type Project } from '../../../../shared/project-schema'
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  DEFAULT_PROJECT_NAME,
+  type Project,
+} from '../../../../shared/project-schema'
 
 import { createMediaClip, createTextClip } from './clip-factory'
 import {
@@ -45,6 +49,9 @@ export function EditorProvider({
   )
   const [width, setWidth] = useState(initialProject?.width ?? 1920)
   const [height, setHeight] = useState(initialProject?.height ?? 1080)
+  const [backgroundColor, setBackgroundColor] = useState(
+    initialProject?.backgroundColor ?? DEFAULT_CANVAS_BACKGROUND,
+  )
   const [volume, setVolume] = useState(initialProject?.volume ?? 0.4)
   const [exportSettings, setExportSettings] = useState<ExportSettings>(
     initialProject?.exportSettings ?? {
@@ -360,6 +367,7 @@ export function EditorProvider({
         fps: FPS,
         width,
         height,
+        backgroundColor,
         volume,
         exportSettings,
         clips: clips as unknown as Record<string, unknown>[],
@@ -373,6 +381,7 @@ export function EditorProvider({
     projectName,
     width,
     height,
+    backgroundColor,
     volume,
     exportSettings,
     clips,
@@ -386,6 +395,7 @@ export function EditorProvider({
       fps: FPS,
       width,
       height,
+      backgroundColor,
       volume,
       exportSettings,
       clips,
@@ -404,6 +414,7 @@ export function EditorProvider({
       setExportSettings,
       setWidth,
       setHeight,
+      setBackgroundColor,
       setCurrentFrame,
       setIsPlaying,
       setIsLooping,
@@ -437,6 +448,7 @@ export function EditorProvider({
       durationInFrames,
       exportSettings,
       fullscreenElementRef,
+      backgroundColor,
       height,
       isLooping,
       isPlaying,

@@ -62,6 +62,7 @@ export const ClipSchema = z.object({
 
 export const CompositionPropsSchema = z.object({
   clips: z.array(ClipSchema),
+  backgroundColor: z.string().optional(),
 })
 
 export type CompositionPropsInput = z.infer<typeof CompositionPropsSchema>

@@ -45,7 +45,10 @@ const calculateMetadata: CalculateMetadataFunction<
     fps,
     width,
     height,
-    props: { clips },
+    props: {
+      clips,
+      backgroundColor: props.backgroundColor,
+    },
   }
 }
 

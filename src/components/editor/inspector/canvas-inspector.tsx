@@ -41,7 +41,7 @@ import { useSidebar } from '@/components/ui/sidebar'
 import { useEditor } from '../model/editor-context-value'
 import type { Clip } from '../model/editor-types'
 import { RENDERING_AVAILABLE } from '../model/render-mode'
-import { Section } from './inspector-controls'
+import { ColorInput, Section } from './inspector-controls'
 import { MediaInspector } from './media-inspector'
 import { MediaLibraryDialog } from './media-library-dialog'
 
@@ -107,6 +107,8 @@ export function CanvasInspector({
   setSelectedClipId,
   setWidth,
   setHeight,
+  backgroundColor,
+  setBackgroundColor,
 }: {
   width: number
   height: number
@@ -119,6 +121,8 @@ export function CanvasInspector({
   setSelectedClipId: (id: string | null) => void
   setWidth: (value: number) => void
   setHeight: (value: number) => void
+  backgroundColor: string
+  setBackgroundColor: (value: string) => void
 }) {
   const [selectedCanvasPresetId, setSelectedCanvasPresetId] = useState('custom')
   const [openSections, setOpenSections] = useState([
@@ -303,6 +307,11 @@ export function CanvasInspector({
                   <RotateCw className="size-3" />
                 </Button>
               </div>
+              <ColorInput
+                label="Background"
+                value={backgroundColor}
+                onChange={setBackgroundColor}
+              />
             </div>
           </Section>
 

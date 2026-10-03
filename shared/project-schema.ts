@@ -27,6 +27,8 @@ export const ProjectSchema = z.object({
   fps: z.number().int().positive(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
+  /** Video canvas fill. Optional so projects saved before this field still parse. */
+  backgroundColor: z.string().min(1).optional(),
   volume: z.number().min(0).max(1),
   exportSettings: ExportSettingsSchema,
   clips: z.array(ProjectClipSchema),
@@ -48,6 +50,8 @@ export const ProjectSummarySchema = z.object({
 export type ProjectSummary = z.infer<typeof ProjectSummarySchema>
 
 export const DEFAULT_PROJECT_NAME = 'Untitled project'
+
+export const DEFAULT_CANVAS_BACKGROUND = '#000000'
 
 export function makeEmptyProject(input: {
   id: string

@@ -19,6 +19,7 @@ export function Preview() {
     height,
     durationInFrames,
     volume,
+    backgroundColor,
     isLooping,
     previewZoom,
     showCanvasRulers,
@@ -27,6 +28,7 @@ export function Preview() {
     setSelectedClipId,
     addFiles,
     updateClip,
+    pause,
     setCurrentFrame,
     setIsPlaying,
   } = useEditor()
@@ -115,8 +117,15 @@ export function Preview() {
   const canvasDisplayHeight = canvasSize.height * previewZoom
 
   const playerInputProps = useMemo(
-    () => ({ clips, selectedClipId, setSelectedClipId, updateClip }),
-    [clips, selectedClipId, setSelectedClipId, updateClip],
+    () => ({
+      clips,
+      backgroundColor,
+      selectedClipId,
+      setSelectedClipId,
+      updateClip,
+      pause,
+    }),
+    [backgroundColor, clips, pause, selectedClipId, setSelectedClipId, updateClip],
   )
 
   const guides = useCanvasGuides({

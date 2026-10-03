@@ -16,6 +16,7 @@ export type EditorState = {
   fps: number
   width: number
   height: number
+  backgroundColor: string
   volume: number
   exportSettings: ExportSettings
   clips: Clip[]
@@ -34,6 +35,7 @@ export type EditorState = {
   setExportSettings: (settings: ExportSettings) => void
   setWidth: (v: number) => void
   setHeight: (v: number) => void
+  setBackgroundColor: (v: string) => void
   setCurrentFrame: (f: number) => void
   setIsPlaying: (p: boolean) => void
   setIsLooping: (v: boolean) => void

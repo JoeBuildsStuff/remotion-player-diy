@@ -159,3 +159,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* react-colorful — saturation only; hue lives in the custom color row */
+.palette-color-picker.react-colorful {
+  width: 100%;
+  height: 160px;
+}
+
+.palette-color-picker .react-colorful__saturation {
+  border-radius: 0.5rem;
+  border-bottom: none;
+}
+
+.palette-color-picker .react-colorful__hue {
+  display: none;
+}
+
+.palette-color-picker .react-colorful__pointer {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-width: 2px;
+}

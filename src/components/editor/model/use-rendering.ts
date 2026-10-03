@@ -34,6 +34,7 @@ export type RenderInputs = {
   width: number
   height: number
   durationInFrames: number
+  backgroundColor: string
   exportSettings: ExportSettings
 }
 
@@ -81,6 +82,7 @@ function buildRenderPayload(inputs: RenderInputs) {
       width: inputs.width,
       height: inputs.height,
       durationInFrames: inputs.durationInFrames,
+      backgroundColor: inputs.backgroundColor,
     },
     exportSettings: {
       ...inputs.exportSettings,

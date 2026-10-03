@@ -28,7 +28,7 @@ function formatBytes(bytes: number) {
 }
 
 export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
-  const { clips, fps, width, height, durationInFrames, exportSettings } =
+  const { clips, fps, width, height, durationInFrames, backgroundColor, exportSettings } =
     useEditor()
   const { state, renderMedia, reset } = useRendering()
 
@@ -58,6 +58,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
       width,
       height,
       durationInFrames,
+      backgroundColor,
       exportSettings,
     })
   }, [
@@ -68,6 +69,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
     width,
     height,
     durationInFrames,
+    backgroundColor,
     exportSettings,
     pendingUploads.length,
     renderMedia,
@@ -181,6 +183,7 @@ export function RenderDialog({ open, onOpenChange }: RenderDialogProps) {
                   width,
                   height,
                   durationInFrames,
+                  backgroundColor,
                   exportSettings,
                 })
               }}

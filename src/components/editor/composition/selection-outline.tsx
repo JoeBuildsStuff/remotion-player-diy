@@ -1,4 +1,4 @@
-import { type PointerEvent as ReactPointerEvent } from 'react'
+import { type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { useCurrentScale } from 'remotion'
 
@@ -17,17 +17,28 @@ import {
   type ClipDragData,
   type ResizeHandle,
 } from './composition-geometry'
+import { TextCanvasEditor } from './text-canvas-editor'
 
 export function SelectionOutline({
   clip,
   isSelected,
+  isEditing,
   setSelectedClipId,
   updateClip,
+  onBeginTextEdit,
+  commitTextRef,
+  onCommitText,
+  onCancelTextEdit,
 }: {
   clip: Clip
   isSelected: boolean
+  isEditing: boolean
   setSelectedClipId: (id: string | null) => void
   updateClip: (id: string, patch: Partial<Clip>) => void
+  onBeginTextEdit: (id: string) => void
+  commitTextRef: MutableRefObject<(() => void) | null>
+  onCommitText: (text: string) => void
+  onCancelTextEdit: () => void
 }) {
   const scale = useCurrentScale()
   const borderWidth = Math.ceil(2 / scale)
@@ -100,11 +111,21 @@ export function SelectionOutline({
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
+      {...(isEditing ? {} : attributes)}
       onPointerDown={(e) => {
+        if (isEditing) {
+          e.stopPropagation()
+          return
+        }
         listeners?.onPointerDown?.(e)
         e.stopPropagation()
         if (e.button === 0 && !isSelected) setSelectedClipId(clip.id)
+      }}
+      onDoubleClick={(e) => {
+        if (clip.type !== 'text') return
+        e.stopPropagation()
+        e.preventDefault()
+        onBeginTextEdit(clip.id)
       }}
       onClick={(e) => {
         e.stopPropagation()
@@ -117,11 +138,19 @@ export function SelectionOutline({
         height: clip.height,
         transform: `rotate(${clip.rotation}deg)`,
         transformOrigin: 'center',
-        cursor: isDragging ? 'grabbing' : 'grab',
-        userSelect: 'none',
+        cursor: isEditing ? 'text' : isDragging ? 'grabbing' : 'grab',
+        userSelect: isEditing ? 'text' : 'none',
         touchAction: 'none',
       }}
     >
+      {isEditing && clip.type === 'text' ? (
+        <TextCanvasEditor
+          clip={clip}
+          commitRef={commitTextRef}
+          onCommit={onCommitText}
+          onCancel={onCancelTextEdit}
+        />
+      ) : null}
       {isSelected ? (
         <>
           <div

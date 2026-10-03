@@ -31,6 +31,7 @@ const RenderRequestSchema = z.object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
     durationInFrames: z.number().int().positive(),
+    backgroundColor: z.string().optional(),
   }),
   exportSettings: ExportSettingsSchema,
 })

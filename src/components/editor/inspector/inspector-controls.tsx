@@ -1,13 +1,4 @@
 import { Button } from '@/components/ui/button'
-import {
-  ColorPicker,
-  ColorPickerAlpha,
-  ColorPickerEyeDropper,
-  ColorPickerFormat,
-  ColorPickerHue,
-  ColorPickerOutput,
-  ColorPickerSelection,
-} from '@/components/ui/color-picker'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Slider } from '@/components/ui/slider'
@@ -18,26 +9,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 
-function normalizeColorInputValue(value: string) {
-  return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value)
-    ? value.toLowerCase()
-    : '#000000'
-}
-
-function toHexComponent(value: number) {
-  return Math.round(value).toString(16).padStart(2, '0')
-}
-
-function rgbaArrayToColorString(color: number[]) {
-  const [r = 0, g = 0, b = 0, alpha = 1] = color
-  const nextAlpha = Math.max(0, Math.min(1, alpha))
-
-  if (nextAlpha < 1) {
-    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${nextAlpha.toFixed(3)})`
-  }
-
-  return `#${toHexComponent(r)}${toHexComponent(g)}${toHexComponent(b)}`
-}
+import {
+  PaletteColorPickerPanel,
+  colorSwatchStyle,
+  colorValueLabel,
+} from './palette-color-picker'
 
 export function Section({
   value,
@@ -94,8 +70,6 @@ export function ColorInput({
   value: string
   onChange: (value: string) => void
 }) {
-  const normalizedValue = normalizeColorInputValue(value)
-
   return (
     <div className="space-y-2">
       <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -110,32 +84,16 @@ export function ColorInput({
             >
               <span
                 className="h-full w-full rounded-sm border border-border/80"
-                style={{ backgroundColor: value }}
+                style={colorSwatchStyle(value)}
               />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 p-3">
-            <ColorPicker
-              value={value}
-              defaultValue={normalizedValue}
-              className="h-auto w-full"
-              onChange={(nextValue) => {
-                onChange(rgbaArrayToColorString(nextValue as number[]))
-              }}
-            >
-              <ColorPickerSelection className="h-32 rounded-md" />
-              <ColorPickerHue />
-              <ColorPickerAlpha />
-              <div className="flex items-center gap-2">
-                <ColorPickerEyeDropper />
-                <ColorPickerOutput />
-                <ColorPickerFormat />
-              </div>
-            </ColorPicker>
+          <PopoverContent align="start" className="w-auto gap-0 p-3">
+            <PaletteColorPickerPanel value={value} onChange={onChange} />
           </PopoverContent>
         </Popover>
         <code className="truncate rounded bg-secondary/80 px-2 py-1 font-mono text-[11px] text-muted-foreground">
-          {normalizedValue}
+          {colorValueLabel(value)}
         </code>
       </div>
     </div>

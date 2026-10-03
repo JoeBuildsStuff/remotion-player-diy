@@ -19,6 +19,8 @@ export function Inspector() {
   const {
     width,
     height,
+    backgroundColor,
+    setBackgroundColor,
     setWidth,
     setHeight,
     durationInFrames,
@@ -72,6 +74,8 @@ export function Inspector() {
             setSelectedClipId={setSelectedClipId}
             setWidth={setWidth}
             setHeight={setHeight}
+            backgroundColor={backgroundColor}
+            setBackgroundColor={setBackgroundColor}
           />
         )}
       </SidebarContent>
