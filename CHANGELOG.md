@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.9.0...v1.10.0) (2026-10-03)
+
+
+### Features
+
+* add canvas background, on-canvas text editing, and palette colors ([338495c](https://github.com/JoeBuildsStuff/remotion-player-diy/commit/338495c793460931113da65dc8444a35ac189446))
+
 # [1.9.0](https://github.com/JoeBuildsStuff/remotion-player-diy/compare/v1.8.0...v1.9.0) (2026-08-26)
 
 
