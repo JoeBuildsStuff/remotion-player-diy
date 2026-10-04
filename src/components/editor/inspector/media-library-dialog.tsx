@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AudioLines,
   Image as ImageIcon,
@@ -11,6 +11,15 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,6 +28,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import {
   ToggleGroup,
@@ -88,6 +104,59 @@ function TypeIcon({
   return <Icon className={cn('size-5 text-muted-foreground', className)} />
 }
 
+function DeleteMediaDialog({
+  source,
+  onOpenChange,
+  onConfirm,
+}: {
+  source: ListedSource | null
+  onOpenChange: (open: boolean) => void
+  onConfirm: (source: ListedSource) => void
+}) {
+  const displayedSource = useRef(source)
+  if (source) displayedSource.current = source
+  const name = (source ?? displayedSource.current)?.name
+
+  return (
+    <AlertDialog open={source !== null} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <Empty className="flex-none border-0 bg-transparent p-6">
+          <EmptyHeader>
+            <EmptyMedia
+              variant="icon"
+              className="bg-destructive/10 text-destructive"
+            >
+              <Trash2 />
+            </EmptyMedia>
+            <EmptyTitle>
+              <AlertDialogTitle className="text-sm font-medium tracking-tight">
+                Delete this file?
+              </AlertDialogTitle>
+            </EmptyTitle>
+            <EmptyDescription className="break-words">
+              <AlertDialogDescription>
+                &ldquo;{name}&rdquo; will be permanently deleted. This cannot
+                be undone.
+              </AlertDialogDescription>
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => {
+              if (source) onConfirm(source)
+            }}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 function Thumbnail({ source }: { source: ListedSource }) {
   const type = inferClipType(source.name, source.contentType)
   return (
@@ -132,6 +201,7 @@ export function MediaLibraryDialog({
   const [filter, setFilter] = useState<Filter>('all')
   const [adding, setAdding] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<ListedSource | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -193,9 +263,7 @@ export function MediaLibraryDialog({
   }
 
   const handleDelete = async (source: ListedSource) => {
-    if (!window.confirm(`Delete "${source.name}"? This cannot be undone.`)) {
-      return
-    }
+    setPendingDelete(null)
     setDeleting(source.pathname)
     try {
       await deleteSource({ url: source.url, pathname: source.pathname })
@@ -210,7 +278,14 @@ export function MediaLibraryDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setPendingDelete(null)
+        onOpenChange(next)
+      }}
+    >
       <DialogContent className="flex h-[85vh] max-h-[85vh] w-[95vw] max-w-[calc(100%-2rem)] flex-col gap-4 text-sm sm:max-w-5xl lg:max-w-6xl">
         <DialogHeader>
           <DialogTitle className="text-base">Media Library</DialogTitle>
@@ -346,7 +421,7 @@ export function MediaLibraryDialog({
                               variant="ghost"
                               size="icon-sm"
                               disabled={isDeleting}
-                              onClick={() => void handleDelete(source)}
+                              onClick={() => setPendingDelete(source)}
                               aria-label={`Delete ${source.name}`}
                               className="absolute top-3 right-3 bg-background/80 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                             >
@@ -369,5 +444,13 @@ export function MediaLibraryDialog({
         )}
       </DialogContent>
     </Dialog>
+    <DeleteMediaDialog
+      source={open ? pendingDelete : null}
+      onOpenChange={(next) => {
+        if (!next) setPendingDelete(null)
+      }}
+      onConfirm={(source) => void handleDelete(source)}
+    />
+    </>
   )
 }
